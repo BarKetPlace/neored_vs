@@ -228,7 +228,7 @@ for v = 1 : numel(var_labels)
     hold on;
     patch([tld.t_average; tld.t_average(end : -1 : 1)], [m + s; m(end : -1 : 1) - s(end : -1 : 1)], [0.5, 0.5, 0.5], 'FaceAlpha', 0.5, 'EdgeColor', [1, 1, 1]);
     plot([0, 0], [min(m - s), max(m + s)], 'k--', 'LineWidth', 2);
-    plot([-6, 12], [0, 0], 'k--', 'LineWidth', 1);
+    plot(t_limits, [0, 0], 'k--', 'LineWidth', 1);
     plot([mean(tld.t_stop(idx_include), 'omitnan'), mean(tld.t_stop(idx_include), 'omitnan')], [min(m - s), max(m + s)], 'k--', 'LineWidth', 2);
 
     title(sprintf('%s', var_labels{v}), 'Interpreter', 'None');
@@ -238,8 +238,19 @@ for v = 1 : numel(var_labels)
     ylim([min(m - s), max(m + s)])
 end
 orient(fig, 'landscape')
-exportgraphics(gcf, sprintf('../results/timelocked_data_all_patients_%s.jpg',dataset_label), 'BackgroundColor', 'none','Resolution',300);
+exportgraphics(fig, sprintf('../results/timelocked_data_all_patients_%s.jpg',dataset_label), 'BackgroundColor', 'none','Resolution',300);
 print(sprintf('../results/timelocked_data_all_patients_%s.pdf',dataset_label), '-dpdf', '-bestfit')
+%print(sprintf('../results/timelocked_data_all_patients_%s_2.jpg',dataset_label), '-djpg', '-bestfit')
+
+%all_markers = {'s','*','o','p'};
+rates_per_kilo = tld.transfusion_rate./tld.TESTOD_MostRecentWeight;
+vol_per_kilo = tld.transfusion_volume./tld.TESTOD_MostRecentWeight;
+
+tld.good_rate_volume = (rates_per_kilo >= 3) & vol_per_kilo >= 8;
+
+sig_quality(:, ~tld.good_rate_volume) = 0;
+
+tld.sig_quality = sig_quality;
 
 %cluster analysis
 cluster_analysis = false;
@@ -247,44 +258,50 @@ if cluster_analysis
     pre = find(tld.t_average<0);
     post = find(tld.t_average>0);
     
-    
-    dataPrehrmean=tld.hr_mean(pre,idx_include);
-    dataPosthrmean=tld.hr_mean(post,idx_include);
+    if strcmp(dataset_label, 'Stockholm')
+        idx_include_hr = sig_quality(1,:);
+        idx_include_sats = sig_quality(2,:);
+        idx_include_rr = sig_quality(3,:);
+    else
+        idx_include_hr = idx_include;
+        idx_include_sats = idx_include;
+        idx_include_rr = idx_include;
+    end
+
+
+    dataPrehrmean=tld.hr_mean(pre,idx_include_hr);
+    dataPosthrmean=tld.hr_mean(post,idx_include_hr);
     disp('cluster analysis HR mean') 
     montecarlo_fornewdata_differentsizes(dataPrehrmean', dataPosthrmean', 1/t_overlap, t_limits(1)+1, t_limits(2));
     
-    dataPrehrsd=tld.hr_std(pre,idx_include);
-    dataPosthrsd=tld.hr_std(post,idx_include);
+    dataPrehrsd=tld.hr_std(pre,idx_include_hr);
+    dataPosthrsd=tld.hr_std(post,idx_include_hr);
     disp('cluster analysis HR SD') 
     montecarlo_fornewdata_differentsizes(dataPrehrsd', dataPosthrsd', 1/t_overlap, t_limits(1)+1, t_limits(2));
     
-    dataPresatsmean=tld.sats_mean(pre,idx_include);
-    dataPostsatsmean=tld.sats_mean(post,idx_include);
+    dataPresatsmean=tld.sats_mean(pre,idx_include_sats);
+    dataPostsatsmean=tld.sats_mean(post,idx_include_sats);
     disp('cluster analysis Sats mean') 
     montecarlo_fornewdata_differentsizes(dataPresatsmean', dataPostsatsmean', 1/t_overlap, t_limits(1)+1, t_limits(2));
     
-    dataPresatssd=tld.sats_std(pre,idx_include);
-    dataPostsatssd=tld.sats_std(post,idx_include);
+    dataPresatssd=tld.sats_std(pre,idx_include_sats);
+    dataPostsatssd=tld.sats_std(post,idx_include_sats);
     disp('cluster analysis Sats SD') 
     montecarlo_fornewdata_differentsizes(dataPresatssd', dataPostsatssd', 1/t_overlap, t_limits(1)+1, t_limits(2));
     
-    dataPrerrmean=tld.rr_mean(pre,idx_include);
-    dataPostrrmean=tld.rr_mean(post,idx_include);
+    dataPrerrmean=tld.rr_mean(pre,idx_include_rr);
+    dataPostrrmean=tld.rr_mean(post,idx_include_rr);
     disp('cluster analysis RR mean')
     montecarlo_fornewdata_differentsizes(dataPrerrmean', dataPostrrmean', 1/t_overlap, t_limits(1)+1, t_limits(2));
     
-    dataPrerrsd=tld.rr_std(pre,idx_include);
-    dataPostrrsd=tld.rr_std(post,idx_include);
+    dataPrerrsd=tld.rr_std(pre,idx_include_rr);
+    dataPostrrsd=tld.rr_std(post,idx_include_rr);
     disp('cluster analysis RR SD')
     montecarlo_fornewdata_differentsizes(dataPrerrsd', dataPostrrsd', 1/t_overlap, t_limits(1)+1, t_limits(2));
 end
 
 % find responders
-tld.sig_quality = sig_quality;
 %find_responders(tld, std_threshold)
-
-
-%all_markers = {'s','*','o','p'};
 
 
 if 1
@@ -292,21 +309,22 @@ if 1
     
     %find subject labels for Oxford data
     if strcmp(dataset_label, 'Oxford')
-        all_unique_patid=unique(subjectid);
-        patient_ids_integer=str2num(subjectid(:,end-1:end));
+        all_unique_patid = unique(subjectid);
+        patient_ids_integer = str2num(subjectid(:,end-1:end));
     end
     
     
     if strcmp(dataset_label, 'Stockholm')
         % Convert the list of hex IDs to integer ids
-        all_unique_patid=unique(patient_ids);
+        
+        all_unique_patid = unique(patient_ids);
         subjectid = patient_ids;
         patient_ids_integer = zeros(size(patient_ids,1),1);
         for ipat = 1:size(all_unique_patid,1)
-            patient_ids_integer(find(contains(patient_ids, all_unique_patid{ipat})))=ipat;
+            patient_ids_integer(find(contains(patient_ids, all_unique_patid{ipat}))) = ipat;
         end
         
-        print_dataset_description(tld,patient_ids,signals,all_unique_patid,tld.pre_post_hb,dataset_label)
+        print_dataset_description(tld, patient_ids, signals, dataset_label)
     end
     
     % Average lines per response patient groups
@@ -327,7 +345,7 @@ if 1
             [~, idx] = unique(patid_included);
             unique_patid_sig_hb = patid_included(idx);
     
-            fprintf('\n\nvariable=%s, n-patients=%d, n-evt=%d, n-fullHB=%d\n', ...
+            fprintf('\n\nVariable=%s, n-patients=%d, n-evt=%d, n-fullHB=%d\n', ...
                     var_labels{isig}, npatsig, sum(idx_good_quality), size(full_hb,2));
     
             print_demographics(tld.BIRTH_weight(unique_patid_sig_hb), tld.BIRTH_Gender(unique_patid_sig_hb), tld.PMA(unique_patid_sig_hb))
@@ -338,10 +356,10 @@ if 1
         for icolor = 1:size(all_colors,2)
             if ~strcmp(all_colors{icolor},'green')
                 idx_sigcolor = (idx_good_quality) & (colors(isig,:)==icolor);
-                hb = tld.pre_post_hb(:, idx_sigcolor);
-                full_hb = hb(:, filter_full_hb(hb)); %hb(:, sum(isnan(hb),1)==0);
+                %hb = tld.pre_post_hb(:, idx_sigcolor);
+                %full_hb = hb(:, filter_full_hb(hb)); %hb(:, sum(isnan(hb),1)==0);
                 
-                displayname = '# Transfusions=%d\n# Patients=%d\n\\Delta Hb=%.2f \\pm %.2f (n=%d)';
+                displayname = '# Transfusions=%d\n# Patients=%d\n';
     
                 if strcmp(dataset_label, 'Oxford') || strcmp(dataset_label, 'Stockholm')
                     patid_included = patient_ids_integer(idx_sigcolor);
@@ -350,12 +368,9 @@ if 1
                     
                     npatsigcolor = size(idx,1);
     
-                    displayname = sprintf(displayname, sum(idx_sigcolor), npatsigcolor, ...
-                                            mean(full_hb(2,:)- full_hb(1,:)), ...
-                                            std(full_hb(2,:)- full_hb(1,:)), ...
-                                            size(full_hb,2));
+                    displayname = sprintf(displayname, sum(idx_sigcolor), npatsigcolor);
                 end
-                fprintf('color=%s\n%s\n', all_colors_names{icolor}, displayname);
+                fprintf('\tcolor=%s\n%s\n', all_colors_names{icolor}, displayname);
                 
                 print_demographics(tld.BIRTH_weight(unique_patid_sigcolor),tld.BIRTH_Gender(unique_patid_sigcolor),tld.PMA(unique_patid_sigcolor))
                 
@@ -406,10 +421,11 @@ if 1
         xlabel('Time [hours]')
         ylabel(y_names{isig});
         xlim([timeline(1),timeline(end)])
-        set(    gcf,'Units','normalized','OuterPosition',[0 0 0.3 0.5]);
+        set(gcf,'Units','normalized','OuterPosition',[0 0 0.25 0.3]);
+
         % Save
-        exportgraphics(fig, sprintf('../results/%s_all_patients_%s.jpg',sprintf(var_labels{isig}),dataset_label));
-        %print(sprintf('%s_all_patients.jpg',sprintf(var_labels{isig})), '-djpg','-bestfit');
+        exportgraphics(fig, sprintf('../results/%s_all_patients_%s.jpg', sprintf(var_labels{isig}), dataset_label), 'BackgroundColor', 'None', 'Resolution', 300);
+        %print(sprintf('../results/%s_all_patients_%s.jpg',sprintf(var_labels{isig}),dataset_label), '-djpg','-bestfit');
     
     end
     
@@ -424,23 +440,29 @@ if 1
     
         subplot(ceil(numel(var_labels)/3),3,isig)
         
-        piechart([increase,decrease,nochange],["increase","decrease","no change"],'LegendVisible', 'off', 'FontSize', 10)
-        title(var_labels{isig})
-        exportgraphics(gcf, sprintf('../results/piechart_%s_all_patients_%s.jpg',sprintf(var_labels{isig}),dataset_label), 'BackgroundColor', 'none','Resolution',300);
-    
-        % save
-        %print(sprintf('piechart_%s_all_patients',sprintf(var_labels{isig})),'-dpdf','-bestfit')
-    
+        piechart([increase,decrease,nochange],["increase","decrease","no change"],'LegendVisible', 'off', 'FontSize', 14)
+        title(y_names{isig});
+
     end
+    set(findall(0, 'type', 'axes'), 'FontName', 'Times', 'Fontsize', 24, 'TickDir', 'out', 'box', 'off', 'linewidth', 2, 'ticklength', [0.01, 0.01])
+
+    set(gcf,'Units','normalized','OuterPosition',[0 0 0.5 0.3]);
+
+
+    exportgraphics(gcf, sprintf('../results/piechart_all_patients_%s.jpg',dataset_label), 'BackgroundColor', 'none','Resolution',300);
+
+    % save
+    print(sprintf('../results/piechart_all_patients_%s.pdf',dataset_label),'-dpdf','-bestfit')
     
-    
-    set(findall(0, 'type', 'axes'), 'FontName', 'Times', 'Fontsize', 16, 'TickDir', 'out', 'box', 'off', 'linewidth', 2, 'ticklength', [0.01, 0.01])
-    end
+end
 end
 
 function idx_full_hb = filter_full_hb(data)
-% Data of size (2,N), returns 
+% Data of size (2,N), returns the indices of events with complete Hb data
+    
     %idx_full_hb = sum(isnan(data),1)==0;
+
+    % Ignore events without endHb data
     idx_full_hb = true(1,size(data,2));% sum(isnan(data),1)==0;
 end
 % _ EOF____________________________________________________________________

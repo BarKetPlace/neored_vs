@@ -23,6 +23,7 @@ dataset_label = 'Oxford';
 [ret, name] = system('hostname');
 name = strip(name);
 if strcmp(name, 'cmm0958')
+    addpath('lib/palm/palm-alpha119/')
     dataset_label = 'Stockholm';
 end
 
