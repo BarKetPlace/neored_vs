@@ -89,6 +89,7 @@ for e = 1 : numel(idx_events)
        vs.weight_kg_pre
    end
     tmp = vs.HR(idx_time);
+    
     if ~strcmp(vs.dataset_label,'Stockholm')
         vs.HR(vs.HR == 0) = NaN;
         tld.hr(:, tld.counter) = NaN(size(tld.time_ref, 2), 1);

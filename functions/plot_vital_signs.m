@@ -121,7 +121,7 @@ else
         end
     
         % find transfusion starts
-            % find transfusion starts - will skip data set if it can't find
+        % find transfusion starts - will skip data set if it can't find
         % transfusion start
         if ~isfield(vs, 'events_vital_signs'); disp('no data'); toremove=[toremove;f]; continue; end
         
@@ -132,13 +132,17 @@ else
             fs=0.0011;
         end
     
-        if strcmp(dataset_label, 'Oxford') || strcmp(dataset_label, 'Stockholm')
+        if strcmp(dataset_label, 'Oxford')
             fs = 0.9766;
+        end
+        
+        if  strcmp(dataset_label, 'Stockholm')
+            fs=1;
         end
     
         % time-lock data
         tld = time_lock_data(vs, tld, t_limits, t_baseline, fs);
-        %  tld_nocorrection = time_lock_data_nocorrection(vs, tld_nocorrection, t_limits);
+        tld_nocorrection = time_lock_data_nocorrection(vs, tld_nocorrection, t_limits, fs);
         
         if strcmp(dataset_label, 'Oxford')
             n = length(find(contains(vs.events_vital_signs, 'transfusion') & contains(vs.events_vital_signs, 'start')));
@@ -150,9 +154,6 @@ else
     
     end
    
-    % identify bradycardia, tachycardia, desats
-    % time_events=identify_desatbradytachy(tld_nocorrection);
-    
     % get moving average
     tld = moving_average(tld, t_window, t_overlap);
     
@@ -200,6 +201,30 @@ else
     save(strcat(preprocessed_data_folder,'/rawtransfusiondata'))
 end
 
+%print(sprintf('../results/timelocked_data_all_patients_%s_2.jpg',dataset_label), '-djpg', '-bestfit')
+
+%all_markers = {'s','*','o','p'};
+rates_per_kilo = tld.transfusion_rate./tld.TESTOD_MostRecentWeight;
+vol_per_kilo = tld.transfusion_volume./tld.TESTOD_MostRecentWeight;
+
+tld.good_rate_volume = (rates_per_kilo >= 3) & vol_per_kilo >= 8;
+
+sig_quality(:, ~tld.good_rate_volume) = 0;
+
+tld.sig_quality = sig_quality;
+
+
+% identify bradycardia, tachycardia, desats
+time_events = identify_desatbradytachy(tld_nocorrection, sig_quality);
+% Hr, Sats, rr
+hr_quality = sig_quality(1, :);
+sats_quality = sig_quality(2, :);
+time_events.desat = size(time_events.desat(sats_quality));
+time_events.tachy = size(time_events.tachy(hr_quality));
+time_events.brady = size(time_events.brady(hr_quality));
+
+save(sprintf('../results/time_events_%s.mat',dataset_label), 'time_events');
+
 % plot mean response over all transfusions
 fig = figure;
 po = get(gcf, 'position');
@@ -240,17 +265,7 @@ end
 orient(fig, 'landscape')
 exportgraphics(fig, sprintf('../results/timelocked_data_all_patients_%s.jpg',dataset_label), 'BackgroundColor', 'none','Resolution',300);
 print(sprintf('../results/timelocked_data_all_patients_%s.pdf',dataset_label), '-dpdf', '-bestfit')
-%print(sprintf('../results/timelocked_data_all_patients_%s_2.jpg',dataset_label), '-djpg', '-bestfit')
-
-%all_markers = {'s','*','o','p'};
-rates_per_kilo = tld.transfusion_rate./tld.TESTOD_MostRecentWeight;
-vol_per_kilo = tld.transfusion_volume./tld.TESTOD_MostRecentWeight;
-
-tld.good_rate_volume = (rates_per_kilo >= 3) & vol_per_kilo >= 8;
-
-sig_quality(:, ~tld.good_rate_volume) = 0;
-
-tld.sig_quality = sig_quality;
+savefig(fig, sprintf('../results/timelocked_data_all_patients_%s.fig',dataset_label) )
 
 %cluster analysis
 cluster_analysis = false;
@@ -426,7 +441,8 @@ if 1
         % Save
         exportgraphics(fig, sprintf('../results/%s_all_patients_%s.jpg', sprintf(var_labels{isig}), dataset_label), 'BackgroundColor', 'None', 'Resolution', 300);
         %print(sprintf('../results/%s_all_patients_%s.jpg',sprintf(var_labels{isig}),dataset_label), '-djpg','-bestfit');
-    
+        savefig(fig,sprintf('../results/%s_all_patients_%s.fig', sprintf(var_labels{isig}), dataset_label) )
+
     end
     
     %plot piecharts for type of responses
