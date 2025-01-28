@@ -6,7 +6,7 @@
 %     load_monitor_data(files(i).name, d, d)
 % end
 
-
+clear all
 %% find data - must run this section first
 % define_subjects_Oxford
 
