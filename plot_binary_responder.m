@@ -1,5 +1,5 @@
 %folder = '/Volumes/Caroline_backup/Ox68/';
-folder='../results/tables/';
+folder=strcat(plot_dir,'/tables/');
 all_stems = ["hr_mean","hr_std","sats_mean","sats_std","rr_mean","rr_std"];
 for fname_stem = all_stems
     %fname_stem = "sats_mean";

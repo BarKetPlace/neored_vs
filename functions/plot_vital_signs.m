@@ -1,4 +1,4 @@
-function [signals, colors,signal_increase,signal_decrease,var_labels,subjectid,studyid,sig_quality,tld]=plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, sig_check, dataset_label, std_threshold)
+function [signals, colors,signal_increase,signal_decrease,var_labels,subjectid,studyid,sig_quality,tld]=plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, sig_check, dataset_label, std_threshold, plot_dir)
 % - plot_vital_signs(files, t_window, t_overlap, sig_check, dataset_label,
 % std_threshold) -- plots the vital signs responses after time-locking to 
 % transfusion events.
@@ -142,7 +142,7 @@ else
     
         % time-lock data
         tld = time_lock_data(vs, tld, t_limits, t_baseline, fs);
-        tld_nocorrection = time_lock_data_nocorrection(vs, tld_nocorrection, t_limits, fs);
+        %tld_nocorrection = time_lock_data_nocorrection(vs, tld_nocorrection, t_limits, fs);
         
         if strcmp(dataset_label, 'Oxford')
             n = length(find(contains(vs.events_vital_signs, 'transfusion') & contains(vs.events_vital_signs, 'start')));
@@ -165,7 +165,6 @@ else
     sig_quality = true(numel(var_labels), tld.counter - 1);
     
     if sig_check
-    
         % extract signal quality (for now, the code will check if the
         % sig_quality.mat file is available. If this is the case, the user
         % doesn't get the option to re do the signal selection. Delete the file
@@ -215,15 +214,14 @@ tld.sig_quality = sig_quality;
 
 
 % identify bradycardia, tachycardia, desats
-time_events = identify_desatbradytachy(tld_nocorrection, sig_quality);
+%time_events = identify_desatbradytachy(tld_nocorrection);
 % Hr, Sats, rr
-hr_quality = sig_quality(1, :);
-sats_quality = sig_quality(2, :);
-time_events.desat = size(time_events.desat(sats_quality));
-time_events.tachy = size(time_events.tachy(hr_quality));
-time_events.brady = size(time_events.brady(hr_quality));
-
-save(sprintf('../results/time_events_%s.mat',dataset_label), 'time_events');
+%hr_quality = sig_quality(1, :);
+%sats_quality = sig_quality(2, :);
+%time_events.desat = time_events.desat(sats_quality);
+%time_events.tachy = time_events.tachy(hr_quality);
+%time_events.brady = time_events.brady(hr_quality);
+%save(sprintf('../results/time_events_%s.mat',dataset_label), 'time_events');
 
 % plot mean response over all transfusions
 fig = figure;
@@ -263,9 +261,9 @@ for v = 1 : numel(var_labels)
     ylim([min(m - s), max(m + s)])
 end
 orient(fig, 'landscape')
-exportgraphics(fig, sprintf('../results/timelocked_data_all_patients_%s.jpg',dataset_label), 'BackgroundColor', 'none','Resolution',300);
-print(sprintf('../results/timelocked_data_all_patients_%s.pdf',dataset_label), '-dpdf', '-bestfit')
-savefig(fig, sprintf('../results/timelocked_data_all_patients_%s.fig',dataset_label) )
+exportgraphics(fig, sprintf('%s/timelocked_data_all_patients_%s.jpg',plot_dir,dataset_label), 'BackgroundColor', 'none','Resolution',300);
+print(sprintf('%s/timelocked_data_all_patients_%s.pdf',plot_dir,dataset_label), '-dpdf', '-bestfit')
+savefig(fig, sprintf('%s/timelocked_data_all_patients_%s.fig',plot_dir,dataset_label) )
 
 %cluster analysis
 cluster_analysis = false;
@@ -369,26 +367,26 @@ if 1
         % for each types of responses, excluding the "green" for readability (both
         % increase and decrease) 
         for icolor = 1:size(all_colors,2)
+            
+            idx_sigcolor = (idx_good_quality) & (colors(isig,:)==icolor);
+            %hb = tld.pre_post_hb(:, idx_sigcolor);
+            %full_hb = hb(:, filter_full_hb(hb)); %hb(:, sum(isnan(hb),1)==0);
+            
+            displayname = '# Transfusions=%d\n# Patients=%d\n';
+
+            if strcmp(dataset_label, 'Oxford') || strcmp(dataset_label, 'Stockholm')
+                patid_included = patient_ids_integer(idx_sigcolor);
+                [~, idx] = unique(patid_included);
+                unique_patid_sigcolor = patid_included(idx);
+                
+                npatsigcolor = size(idx,1);
+
+                displayname = sprintf(displayname, sum(idx_sigcolor), npatsigcolor);
+            end
+            fprintf('\tcolor=%s\n%s\n', all_colors_names{icolor}, displayname);
+            
+            print_demographics(tld.BIRTH_weight(unique_patid_sigcolor),tld.BIRTH_Gender(unique_patid_sigcolor),tld.PMA(unique_patid_sigcolor))
             if ~strcmp(all_colors{icolor},'green')
-                idx_sigcolor = (idx_good_quality) & (colors(isig,:)==icolor);
-                %hb = tld.pre_post_hb(:, idx_sigcolor);
-                %full_hb = hb(:, filter_full_hb(hb)); %hb(:, sum(isnan(hb),1)==0);
-                
-                displayname = '# Transfusions=%d\n# Patients=%d\n';
-    
-                if strcmp(dataset_label, 'Oxford') || strcmp(dataset_label, 'Stockholm')
-                    patid_included = patient_ids_integer(idx_sigcolor);
-                    [~, idx] = unique(patid_included);
-                    unique_patid_sigcolor = patid_included(idx);
-                    
-                    npatsigcolor = size(idx,1);
-    
-                    displayname = sprintf(displayname, sum(idx_sigcolor), npatsigcolor);
-                end
-                fprintf('\tcolor=%s\n%s\n', all_colors_names{icolor}, displayname);
-                
-                print_demographics(tld.BIRTH_weight(unique_patid_sigcolor),tld.BIRTH_Gender(unique_patid_sigcolor),tld.PMA(unique_patid_sigcolor))
-                
                 data_sigcolor = squeeze(signals(isig, idx_sigcolor,:));
                 if size(data_sigcolor, 2)==1 %this happens if only 1 transfusion in group
                     data_sigcolor=data_sigcolor';
@@ -409,6 +407,8 @@ if 1
                 
                 hold on
                 %%% plot([mean(tld.t_stop(idx_include), 'omitnan'), mean(tld.t_stop(idx_include), 'omitnan')], [min(m - s), max(m + s)], 'k--', 'LineWidth', 2);
+            
+
             end
         end
         legend('NumColumns', 3, 'Location', 'northoutside');
@@ -439,9 +439,9 @@ if 1
         set(gcf,'Units','normalized','OuterPosition',[0 0 0.25 0.3]);
 
         % Save
-        exportgraphics(fig, sprintf('../results/%s_all_patients_%s.jpg', sprintf(var_labels{isig}), dataset_label), 'BackgroundColor', 'None', 'Resolution', 300);
+        exportgraphics(fig, sprintf('%s/%s_all_patients_%s.jpg', plot_dir, sprintf(var_labels{isig}), dataset_label), 'BackgroundColor', 'None', 'Resolution', 300);
         %print(sprintf('../results/%s_all_patients_%s.jpg',sprintf(var_labels{isig}),dataset_label), '-djpg','-bestfit');
-        savefig(fig,sprintf('../results/%s_all_patients_%s.fig', sprintf(var_labels{isig}), dataset_label) )
+        savefig(fig,sprintf('%s/%s_all_patients_%s.fig',plot_dir, sprintf(var_labels{isig}), dataset_label) )
 
     end
     
@@ -465,20 +465,18 @@ if 1
     set(gcf,'Units','normalized','OuterPosition',[0 0 0.5 0.3]);
 
 
-    exportgraphics(gcf, sprintf('../results/piechart_all_patients_%s.jpg',dataset_label), 'BackgroundColor', 'none','Resolution',300);
+    exportgraphics(gcf, sprintf('%s/piechart_all_patients_%s.jpg', plot_dir,dataset_label), 'BackgroundColor', 'none','Resolution',300);
 
     % save
-    print(sprintf('../results/piechart_all_patients_%s.pdf',dataset_label),'-dpdf','-bestfit')
+    print(sprintf('%s/piechart_all_patients_%s.pdf', plot_dir, dataset_label),'-dpdf','-bestfit')
     
 end
 end
 
 function idx_full_hb = filter_full_hb(data)
-% Data of size (2,N), returns the indices of events with complete Hb data
-    
-    %idx_full_hb = sum(isnan(data),1)==0;
-
-    % Ignore events without endHb data
+    % Now they always all have the Hb data because we only care about the
+    % pre-transfusion
+    assert(~sum(isnan(data(1,:))~=0));
     idx_full_hb = true(1,size(data,2));% sum(isnan(data),1)==0;
 end
 % _ EOF____________________________________________________________________

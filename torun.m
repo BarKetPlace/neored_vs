@@ -27,6 +27,7 @@ if strcmp(name, 'cmm0958')
     dataset_label = 'Stockholm';
 end
 
+
 %% plot average and find responders and non-responders
 
 if exist(fullfile(pwd, 'functions'), 'dir')
@@ -34,6 +35,19 @@ if exist(fullfile(pwd, 'functions'), 'dir')
 else
     error('check if "functions"-folder is part of the current folder')
 end
+
+evt_start_days_upper = 2*7;
+evt_start_days_lower = 0;
+plot_dir = '../results_below_2w';
+
+
+%evt_start_days_upper = 1000000000;
+%evt_start_days_lower = 2*7;
+%plot_dir = '../results_above_2w';
+
+%evt_start_days_upper = 1000000000;
+%evt_start_days_lower = 0;
+%plot_dir = '../results';
 
 if strcmp(dataset_label, 'Stockholm')
     define_subjects_Stockholm
@@ -45,8 +59,9 @@ t_limits = [-12, 12]; % hours
 t_baseline = [-6, 0]; % hours
 check_sig = true;
 std_threshold = 1.0;
+
 [signals, responders,signal_increase,signal_decrease,var_labels,subjectid,studyid,sig_quality,tld] = plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, ...
-       check_sig, dataset_label, std_threshold);
+       check_sig, dataset_label, std_threshold, plot_dir);
 %%
 if 1 %create table of results and save as excel files
     increase_responder=zeros(size(responders));
@@ -60,7 +75,7 @@ if 1 %create table of results and save as excel files
         T=table(subjectid, studyid, tld.pre_post_hb(1,:)',tld.pre_post_hb(2,:)',tld.TESTOD_CurrentVentilation',tld.TESTOD_MostRecentWeight', tld.PMA', tld.BIRTH_Gender',increase_responder(v,:)',decrease_responder(v,:)',signal_increase(v,:)',signal_decrease(v,:)', ...
             'VariableNames',{'Subject ID';'Study ID';'StartHB';'EndHB';'TESTOD_CurrentVentilation'; 'TESTOD_MostRecentWeight';'PMA';'BIRTH_Gender';'Increase Response';'Decrease Response';'Average Signal Increase';'Average Signal Decrease'});
        
-        writetable(T,cell2mat(strcat('../results/tables/', var_labels(v),sprintf('_%s.xlsx',dataset_label))));
+        writetable(T,cell2mat(strcat(plot_dir,'/tables/', var_labels(v),sprintf('_%s.xlsx',dataset_label))));
     end
 end
 close all

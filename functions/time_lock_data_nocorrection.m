@@ -26,6 +26,7 @@ function tld = time_lock_data_nocorrection(vs, tld, t_limits, fs)
 % find transfusion start events
 idx_events = find(contains(vs.events_vital_signs, 'transfusion') & ...
     contains(vs.events_vital_signs, 'start'));
+max_gap_length = 15;
 
 for e = 1 : numel(idx_events)
 
@@ -48,16 +49,19 @@ for e = 1 : numel(idx_events)
     tld.hr(:, tld.counter) = NaN(size(tld.time_ref, 2), 1);
     tld.hr(idx_shift, tld.counter) = vs.HR(idx_time);
     tld.hr(tld.hr(:, tld.counter) == 0, tld.counter) = NaN;
+    tld.hr(:,tld.counter) = interp_max_interval(tld.hr(:,tld.counter),max_gap_length);
 
     vs.sats(vs.sats == 0) = NaN;
     tld.sats(:, tld.counter) = NaN(size(tld.time_ref, 2), 1);
     tld.sats(idx_shift, tld.counter) = vs.sats(idx_time);
     tld.sats(tld.sats(:, tld.counter) == 0, tld.counter) = NaN;
+    tld.sats(:,tld.counter) = interp_max_interval(tld.sats(:,tld.counter),max_gap_length);
 
     vs.RR(vs.RR == 0) = NaN;
     tld.rr(:, tld.counter) = NaN(size(tld.time_ref, 2), 1);
     tld.rr(idx_shift, tld.counter) = vs.RR(idx_time);
     tld.rr(tld.rr(:, tld.counter) == 0, tld.counter) = NaN;
+    tld.rr(:,tld.counter) = interp_max_interval(tld.rr(:,tld.counter),max_gap_length);
 
     if isfield(vs, 'ibi')
         vs.ibi.ibi_time_locked = vs.ibi.ibi_time ./ 3600;

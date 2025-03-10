@@ -1,4 +1,4 @@
-function time_events=identify_desatbradytachy(tld, sig_quality)
+function time_events=identify_desatbradytachy(tld)
 %
 %Function to identify desats, brady and tachy according to the definitions
 %used in Poppi.
