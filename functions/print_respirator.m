@@ -11,7 +11,7 @@ function print_respirator(respirators)
     for c = all_respirators
         counts(ic) = sum(strcmp(c,respirators));
         
-        respirator_str=sprintf('%s%s: %d (%.3f), ',respirator_str,c{1,1},counts(ic),counts(ic)/ntot);
+        respirator_str=sprintf('%s%s: %d (%d%%), ',respirator_str,c{1,1},counts(ic),round(100*counts(ic)/ntot));
         ic = ic +1;
     end
     fprintf('%s (Missing: 0/%d)\n',respirator_str,ntot);

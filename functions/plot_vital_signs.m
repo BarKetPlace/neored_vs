@@ -1,4 +1,5 @@
-function [signals, colors,signal_increase,signal_decrease,var_labels,subjectid,studyid,sig_quality,tld]=plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, sig_check, dataset_label, std_threshold, plot_dir)
+function [signals, colors,signal_increase,signal_decrease,var_labels,subjectid,studyid,sig_quality,tld]=plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, sig_check, dataset_label, std_threshold, plot_dir, ...
+    sig_quality_fname,transfusion_rawdata_fname)
 % - plot_vital_signs(files, t_window, t_overlap, sig_check, dataset_label,
 % std_threshold) -- plots the vital signs responses after time-locking to 
 % transfusion events.
@@ -54,9 +55,8 @@ if nargin < 7, std_threshold = 1.5; end
 
 
 % check the availability of the functions folder
-preprocessed_data_folder = '../preprocessed';
-if exist(strcat(preprocessed_data_folder,'/rawtransfusiondata.excelmat'))
-    load(strcat(preprocessed_data_folder,'/rawtransfusiondata.mat'))
+if exist(transfusion_rawdata_fname)
+    load(transfusion_rawdata_fname)
 else
     % pre-allocate some struct and fields
     tld = struct;
@@ -163,13 +163,13 @@ else
     %if isfield(tld, 'fiO2_mean'); var_labels = [var_labels, {'fiO2_mean','Hb_mean', 'fiO2_std','Hb_std'}]; end
     
     sig_quality = true(numel(var_labels), tld.counter - 1);
-    
+
     if sig_check
         % extract signal quality (for now, the code will check if the
         % sig_quality.mat file is available. If this is the case, the user
         % doesn't get the option to re do the signal selection. Delete the file
         % sig_quality.mat if you would like to re do this selection). 
-        if ~exist(sprintf('%s/sig_quality_%s.mat', preprocessed_data_folder, dataset_label), 'file')
+        if ~exist(sig_quality_fname, 'file')
     
             for v = 1 : numel(var_labels)
                 x = tld.(sprintf('%s', var_labels{v}));
@@ -186,18 +186,18 @@ else
             end
     
             % save output
-            save(sprintf('%s/sig_quality_%s.mat',preprocessed_data_folder, dataset_label), 'sig_quality')
+            save(sig_quality_fname, 'sig_quality')
     
         end
     
     end
     close
-    load(sprintf('%s/sig_quality_%s.mat',preprocessed_data_folder, dataset_label), 'sig_quality')
+    load(sig_quality_fname, 'sig_quality')
     
     alpha = 0.2;
     timeline = tld.t_average;
     %clear std_threshold
-    save(strcat(preprocessed_data_folder,'/rawtransfusiondata'))
+    save(transfusion_rawdata_fname)
 end
 
 %print(sprintf('../results/timelocked_data_all_patients_%s_2.jpg',dataset_label), '-djpg', '-bestfit')

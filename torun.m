@@ -7,6 +7,8 @@
 % end
 
 clear all
+
+
 %% find data - must run this section first
 % define_subjects_Oxford
 
@@ -36,22 +38,6 @@ else
     error('check if "functions"-folder is part of the current folder')
 end
 
-evt_start_days_upper = 2*7;
-evt_start_days_lower = 0;
-plot_dir = '../results_below_2w';
-
-
-%evt_start_days_upper = 1000000000;
-%evt_start_days_lower = 2*7;
-%plot_dir = '../results_above_2w';
-
-%evt_start_days_upper = 1000000000;
-%evt_start_days_lower = 0;
-%plot_dir = '../results';
-
-if strcmp(dataset_label, 'Stockholm')
-    define_subjects_Stockholm
-end
 
 t_window = 1; % hours
 t_overlap = 0.5; % hours
@@ -59,30 +45,77 @@ t_limits = [-12, 12]; % hours
 t_baseline = [-6, 0]; % hours
 check_sig = true;
 std_threshold = 1.0;
+preprocessed_data_folder = '../preprocessed';
 
-[signals, responders,signal_increase,signal_decrease,var_labels,subjectid,studyid,sig_quality,tld] = plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, ...
-       check_sig, dataset_label, std_threshold, plot_dir);
-%%
-if 1 %create table of results and save as excel files
+sig_quality_fname = sprintf('%s/sig_quality_%s.mat',preprocessed_data_folder, dataset_label);
+transfusion_rawdata_fname = strcat(preprocessed_data_folder,'/rawtransfusiondata.mat');
+
+%%  Run analysis with several cutoffs on the age at event start.
+for ianalysis = 1:3
+    % Remove cache 
+    delete(sig_quality_fname)
+    delete(transfusion_rawdata_fname)
+
+    % Choice of cutoff & output directory
+    if ianalysis==1 % events below 2w only
+        evt_start_days_upper = 2*7;
+        evt_start_days_lower = 0;
+        plot_dir = '../results_below_2w';
+
+    elseif ianalysis==2 % events above 2w only
+
+        evt_start_days_upper = 1000000000;
+        evt_start_days_lower = 2*7;
+        plot_dir = '../results_above_2w';
+    
+    elseif ianalysis==3 % events above 2w only
+        evt_start_days_upper = 1000000000;
+        evt_start_days_lower = 0;
+        plot_dir = '../results';
+    
+    end
+
+    %% Find the relevant data files
+    if strcmp(dataset_label, 'Stockholm')
+        % Uses the variables evt_start_days_upper and evt_start_days_lower
+        define_subjects_Stockholm
+    end
+        
+    if strcmp(dataset_label, 'Oxford')
+        % Uses the variables evt_start_days_upper and evt_start_days_lower
+        define_subjects_Oxford
+    end
+    if strcmp(dataset_label, 'Berlin')
+        % Uses the variables evt_start_days_upper and evt_start_days_lower
+        define_subjects_Berlin
+    end
+
+    [signals, responders,signal_increase,signal_decrease,var_labels,subjectid,studyid,sig_quality,tld] = plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, ...
+           check_sig, dataset_label, std_threshold, plot_dir, sig_quality_fname, transfusion_rawdata_fname);
+
+    %% Create table of results and save as excel files
     increase_responder=zeros(size(responders));
     decrease_responder=zeros(size(responders));
     increase_responder(find(responders==2))=1;
     increase_responder(find(responders==1))=1;
     decrease_responder(find(responders==3))=1;
     decrease_responder(find(responders==1))=1;
+    
     % Create one table for each variable of interest
     for v=1:length(var_labels)
         T=table(subjectid, studyid, tld.pre_post_hb(1,:)',tld.pre_post_hb(2,:)',tld.TESTOD_CurrentVentilation',tld.TESTOD_MostRecentWeight', tld.PMA', tld.BIRTH_Gender',increase_responder(v,:)',decrease_responder(v,:)',signal_increase(v,:)',signal_decrease(v,:)', ...
             'VariableNames',{'Subject ID';'Study ID';'StartHB';'EndHB';'TESTOD_CurrentVentilation'; 'TESTOD_MostRecentWeight';'PMA';'BIRTH_Gender';'Increase Response';'Decrease Response';'Average Signal Increase';'Average Signal Decrease'});
-       
-        writetable(T,cell2mat(strcat(plot_dir,'/tables/', var_labels(v),sprintf('_%s.xlsx',dataset_label))));
+        excel_fname = strcat(plot_dir,'/tables/', var_labels(v), sprintf('_%s.xlsx',dataset_label));
+        writetable(T, cell2mat(excel_fname));
     end
+    
+    close all
+    
+    plot_binary_responder
+    close all
 end
-close all
 
-plot_binary_responder
 
-sdfsdf
 
 %% Berlin
 

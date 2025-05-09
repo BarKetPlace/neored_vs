@@ -1,12 +1,12 @@
 %folder = '/Volumes/Caroline_backup/Ox68/';
-folder=strcat(plot_dir,'/tables/');
+folder = strcat(plot_dir,'/tables/');
 all_stems = ["hr_mean","hr_std","sats_mean","sats_std","rr_mean","rr_std"];
 for fname_stem = all_stems
     %fname_stem = "sats_mean";
     
     %data_table=readtable(strcat(folder,"hr_mean.xlsx"));
     %data_table=readtable(strcat(folder,"hr_std.xlsx"));
-    data_table=readtable(strcat(folder,fname_stem,'.xlsx'));
+    data_table = readtable(strcat(folder,fname_stem,sprintf('_%s.xlsx',dataset_label)));
     %data_table=readtable(strcat(folder,"rr_mean.xlsx"));
     %data_table=readtable(strcat(folder,"sats_std.xlsx"));
     %data_table=readtable(strcat(folder,"rr_std.xlsx"));

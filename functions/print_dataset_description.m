@@ -28,7 +28,8 @@ function print_dataset_description(tld, patient_ids_, signals_, dataset_label)
     
     incr_hb = hb_signals(2,:)-hb_signals(1,:);
     incr_hb_str=sprintf('Increment Hb: %.1f (%.1f) (Missing: %d/%d)', mean(hb_signals(2,:) - hb_signals(1,:),'omitnan'), std(hb_signals(2,:)-hb_signals(1,:),'omitnan'),sum(isnan(incr_hb)),size(hb_signals,2) );
-    pre_hb_str=sprintf('Pre Hb: %.1f (%.1f) (Missing: %d/%d)', mean(hb_signals(1,:),'omitnan'), std(hb_signals(1,:),'omitnan'),sum(isnan(hb_signals(1,:))),size(hb_signals,2));
+    %pre_hb_str=sprintf('Pre Hb: %.1f (%.1f) (Missing: %d/%d)', mean(hb_signals(1,:),'omitnan'), std(hb_signals(1,:),'omitnan'),sum(isnan(hb_signals(1,:))),size(hb_signals,2));
+    pre_hb_str = data_description(hb_signals(1,:), "Pre-Hb (g/L)");
     post_hb_str=sprintf('Post Hb: %.1f (%.1f)  (Missing: %d/%d)', mean(hb_signals(2,:),'omitnan'), std(hb_signals(2,:),'omitnan'),sum(isnan(hb_signals(2,:))),size(hb_signals,2));
     
     vol = tld.transfusion_volume(tld.good_rate_volume);
@@ -48,6 +49,6 @@ function print_dataset_description(tld, patient_ids_, signals_, dataset_label)
     
     transfusion_counts_str = data_description(count_transfusions', '[n-evts] per patients');
     
-    fprintf('%s\n%s\n%s\n%s\n%s\n%s\n%s\n', pre_hb_str, post_hb_str, incr_hb_str,volumes_per_kilo_str,rates_str,rates_per_kg_str,transfusion_counts_str);
+    fprintf('%s\n%s\n%s\n%s\n%s\n%s\n%s\n%s\n', pre_hb_str, post_hb_str, incr_hb_str,volumes_str,volumes_per_kilo_str,rates_str,rates_per_kg_str,transfusion_counts_str);
     
 end
