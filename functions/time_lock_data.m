@@ -1,5 +1,5 @@
 function tld = time_lock_data(vs, tld, t_limits, t_baseline, fs)
-% - function tld = time_lock_data(vs, tld, t_baseline)
+% - function tld = time_lock_data(vs, tld, t_baseline, fs)
 % --time-locks data to transfusion start
 %
 % Input
@@ -26,6 +26,8 @@ function tld = time_lock_data(vs, tld, t_limits, t_baseline, fs)
 % ________________________________________________________________________
 
 % find transfusion start events
+
+
 idx_events = find(contains(vs.events_vital_signs, 'transfusion') & ...
     contains(vs.events_vital_signs, 'start'));
 
@@ -70,33 +72,105 @@ for e = 1 : numel(idx_events)
     % extract time courses and subtract mean
     idx_baseline = time_locked > t_baseline(1) & time_locked < t_baseline(2);
        
-    tld.BIRTH_Gender{end+1} = vs.sex;
-    tld.hb_pre(end+1) = vs.hb_pre;
-    tld.hb_post(end+1) = vs.hb_post;
-    tld.fiO2_pre(end+1) = vs.fiO2_pre;
-    tld.fiO2_post(end+1) = vs.fiO2_post;
-    tld.PMA(end+1) = vs.birthga;
-    tld.evt_start_pna_days(end+1) = vs.evt_start/24;
-    tld.evt_start_pma_days(end+1) = vs.evt_start/24 + vs.birthga;
-    tld.transfusion_volume(end+1) = vs.evt_sum_dose;
-    tld.transfusion_rate(end+1) = vs.rate;
+    if strcmp(vs.dataset_label, 'Oxford')
+        info = readtable('demographics.xlsx');
+        
+        for o = 1 : numel(info.RECD_ResearchProject)
+            i = contains(vs.path, strcat(info.RECD_ResearchProject(o), info.RECD_ParticipantNumber(o), info.TESTO_TestOccasionNumber(o)), 'IgnoreCase', true);
+            if i
+                idx = o;
+            end
+        end
     
-    tld.BIRTH_weight(end+1) = vs.birthweight;
-    tld.TESTOD_CurrentVentilation{end+1} = vs.respirator{1,1};
-       
-   tld.TESTOD_MostRecentWeight(end+1) = vs.weight_kg_pre;
-   if vs.weight_kg_pre > 5
-       vs.weight_kg_pre
-   end
+        % get demographic data
+        tld.BIRTH_Gender{end+1} = info.BIRTH_Gender{idx};
+        tld.hb_pre(end+1) = info.StartHB(idx);
+        tld.hb_post(end+1) = info.EndHB(idx);
+%         tld.fiO2_pre(end+1) = vs.fiO2_pre;
+%         tld.fiO2_post(end+1) = vs.fiO2_post;
+        tld.PMA(end+1) = info.GA(idx);
+        tld.evt_start_pna_days(end+1) = info.PMA(idx) - info.GA(idx);
+        tld.evt_start_pma_days(end+1) = info.PMA(idx);
+        tld.transfusion_volume(end+1) = info.Volume_kg(idx);
+%         tld.transfusion_rate(end+1) = vs.rate;
+    
+        tld.BIRTH_weight(end+1) = info.BIRTH_BirthWeight(idx);
+        tld.TESTOD_CurrentVentilation(end+1) = info.TESTOD_CurrentVentilation(idx);
+    
+        tld.TESTOD_MostRecentWeight(end+1) = info.TESTOD_MostRecentWeight(idx);
+    end
+
+    if strcmp(vs.dataset_label, 'Stockholm')
+        tld.BIRTH_Gender{end+1} = vs.sex;
+        tld.hb_pre(end+1) = vs.hb_pre;
+        tld.hb_post(end+1) = vs.hb_post;
+        tld.fiO2_pre(end+1) = vs.fiO2_pre;
+        tld.fiO2_post(end+1) = vs.fiO2_post;
+        tld.PMA(end+1) = vs.birthga;
+        tld.evt_start_pna_days(end+1) = vs.evt_start/24;
+        tld.evt_start_pma_days(end+1) = vs.evt_start/24 + vs.birthga;
+        tld.transfusion_volume(end+1) = vs.evt_sum_dose;
+        tld.transfusion_rate(end+1) = vs.rate;
+    
+        tld.BIRTH_weight(end+1) = vs.birthweight;
+        tld.TESTOD_CurrentVentilation{end+1} = vs.respirator{1,1};
+    
+        tld.TESTOD_MostRecentWeight(end+1) = vs.weight_kg_pre;
+        if vs.weight_kg_pre > 5
+            vs.weight_kg_pre
+        end
+    
+    end
+    if strcmp(vs.dataset_label, 'Berlin')
+        tld.BIRTH_Gender{end+1} = vs.sex;
+        tld.hb_pre(end+1) = vs.hb_pre;
+        tld.hb_post(end+1) = vs.hb_post;
+        tld.fiO2_pre(end+1) = vs.fiO2_pre;
+        tld.fiO2_post(end+1) = vs.fiO2_post;
+        tld.PMA(end+1) = vs.birthga;
+        tld.evt_start_pna_days(end+1) = vs.evt_start/24;
+        tld.evt_start_pma_days(end+1) = vs.evt_start/24 + vs.birthga;
+        tld.transfusion_volume(end+1) = vs.evt_sum_dose;
+        tld.transfusion_rate(end+1) = vs.rate;
+    
+        tld.BIRTH_weight(end+1) = vs.birthweight;
+        tld.TESTOD_CurrentVentilation{end+1} = vs.respirator{1,1};
+    
+        tld.TESTOD_MostRecentWeight(end+1) = vs.weight_kg_pre;
+        if vs.weight_kg_pre > 5
+            vs.weight_kg_pre
+        end
+    
+    end
+    if strcmp(vs.dataset_label, 'Imperial')
+        tld.BIRTH_Gender{end+1} = vs.sex;
+        tld.hb_pre(end+1) = vs.hb_pre;
+        tld.hb_post(end+1) = vs.hb_post;
+         tld.fiO2_pre(end+1) = NaN;
+         tld.fiO2_post(end+1) = NaN;
+        tld.PMA(end+1) = vs.PMA;
+        tld.evt_start_pna_days(end+1) = vs.pna;
+        tld.evt_start_pma_days(end+1) = vs.PMA_at_start;
+        tld.transfusion_volume(end+1) = vs.evt_sum_dose;
+        tld.transfusion_rate(end+1) = vs.rate;
+        % 
+        tld.BIRTH_weight(end+1) = vs.birthweight;
+         tld.TESTOD_CurrentVentilation{end+1} = NaN; %vs.respirator{1,1};
+        % 
+         tld.TESTOD_MostRecentWeight(end+1) = NaN; %vs.weight_kg_pre;
+        % if vs.weight_kg_pre > 5
+        %     vs.weight_kg_pre
+        % end
+        % 
+    end
     tmp = vs.HR(idx_time);
-    
     if ~strcmp(vs.dataset_label,'Stockholm')
         vs.HR(vs.HR == 0) = NaN;
         tld.hr(:, tld.counter) = NaN(size(tld.time_ref, 2), 1);
         tmp = interp1(time_locked(idx_time),vs.HR(idx_time),tld.time_ref);
     end
     
-    tld.hr(idx_shift, tld.counter) = tmp - mean(vs.HR(idx_baseline), 'omitnan'); %interpolate to account for sometimes sporadic sampling rate (particularly in Berlin data)
+    tld.hr(:, tld.counter) = tmp - mean(vs.HR(idx_baseline), 'omitnan'); %interpolate to account for sometimes sporadic sampling rate (particularly in Berlin data)
     tld.hr(tld.hr(:, tld.counter) == 0, tld.counter) = NaN;
     
     tmp = vs.sats(idx_time);
@@ -105,7 +179,7 @@ for e = 1 : numel(idx_events)
         tld.sats(:, tld.counter) = NaN(size(tld.time_ref, 2), 1);
         tmp = interp1(time_locked(idx_time),vs.sats(idx_time),tld.time_ref);
     end
-    tld.sats(idx_shift, tld.counter) = tmp - mean(vs.sats(idx_baseline), 'omitnan');
+    tld.sats(:, tld.counter) = tmp - mean(vs.sats(idx_baseline), 'omitnan');
     tld.sats(tld.sats(:, tld.counter) == 0, tld.counter) = NaN;
 
     tmp = vs.RR(idx_time);
@@ -114,7 +188,7 @@ for e = 1 : numel(idx_events)
         tld.rr(:, tld.counter) = NaN(size(tld.time_ref, 2), 1);
         tmp = interp1(time_locked(idx_time),vs.RR(idx_time),tld.time_ref) ;
     end
-    tld.rr(idx_shift, tld.counter) = tmp - mean(vs.RR(idx_baseline), 'omitnan');
+    tld.rr(:, tld.counter) = tmp - mean(vs.RR(idx_baseline), 'omitnan');
     tld.rr(tld.rr(:, tld.counter) == 0, tld.counter) = NaN;
     
     %tmp = vs.fiO2(idx_time);
@@ -136,14 +210,15 @@ for e = 1 : numel(idx_events)
     %tld.Hb(tld.Hb(:, tld.counter) == 0, tld.counter) = NaN;
     
 
+    % time-lock the inter-breath intervals
     if isfield(vs, 'ibi')
         vs.ibi.ibi_time_locked = vs.ibi.ibi_time ./ 3600;
         [~, idx_data] = min(abs(vs.ibi.ibi_time_locked - vs.time_events_vital_signs(idx_events(e))));
         vs.ibi.ibi_time_locked = vs.ibi.ibi_time_locked - vs.ibi.ibi_time_locked(idx_data);
         idx_time = vs.ibi.ibi_time_locked >= tld.time_ref(1) & vs.ibi.ibi_time_locked <= tld.time_ref(end);
         
-        tld.ibi_locked = vs.ibi.ibi(idx_time);
-        tld.ibi_time_locked = vs.ibi.ibi_time_locked(idx_time);
+        tld.ibi_locked{tld.counter} = vs.ibi.ibi(idx_time);
+        tld.ibi_time_locked{tld.counter} = vs.ibi.ibi_time_locked(idx_time);
     end
 
 

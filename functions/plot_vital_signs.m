@@ -120,6 +120,29 @@ else
             vs.fiO2 = vs.fiO2;
         end
     
+        if strcmp(dataset_label, 'Imperial')
+            % Here, we may have to add some extra lines of code to make the
+            % Berlin and Stockholm data similar to the Oxford data. 
+            vs.time_events_vital_signs = vs.time_events_vital_signs;
+            vs.events_vital_signs = {'rbctransfusion_start','rbctransfusion_stop'};
+            vs.HR = vs.HR;
+            vs.sats = vs.sats_max; %change sats measure here, toggle between median, max and just 'sats' which is equal to median
+            % vs.sats_max = vs.sats_max;
+            % vs.sats_median = vs.sats_median;
+            vs.rate=vs.volume/vs.duration;
+            vs.birthweight = vs.BIRTH_weight;
+            vs.PMA = vs.PMA;
+            vs.pna = vs.pna;
+            vs.sex = vs.BIRTH_Gender;
+            vs.PMA_at_start = vs.PMA_at_start;
+            vs.evt_sum_dose = vs.volume;
+            vs.hb_post = vs.post_Hb;
+            vs.hb_pre = vs.pre_Hb;
+            vs.RR = vs.RR;
+            vs.BP = vs.BP;
+            vs.fiO2 = vs.fiO2;
+        end
+    
         % find transfusion starts
         % find transfusion starts - will skip data set if it can't find
         % transfusion start
@@ -139,6 +162,10 @@ else
         if  strcmp(dataset_label, 'Stockholm')
             fs=1;
         end
+
+        if strcmp(dataset_label, 'Imperial')
+            fs=0.016;
+        end
     
         % time-lock data
         tld = time_lock_data(vs, tld, t_limits, t_baseline, fs);
@@ -151,7 +178,20 @@ else
                 studyid = [studyid;files{f}(39:47)];
             end
         end
+        if strcmp(dataset_label, 'Imperial')
+            n = length(find(contains(vs.events_vital_signs, 'transfusion') & contains(vs.events_vital_signs, 'start')));
+            for i = 1 : n
+                idx_slash = strfind(files{f}, '/');
+                file_name = files{f}(idx_slash(end) + 1 : end);
+                idx_underscore = strfind(file_name, 'Imperial_');
+                idx_underscore_end = strfind(file_name, '_R_data_');
+                file_name = file_name(10 : idx_underscore_end(1) -1);
     
+                subjectid = [subjectid; {file_name(1 : 4)}];
+                studyid = [studyid; {file_name}];
+            end
+
+        end
     end
    
     % get moving average
@@ -169,28 +209,40 @@ else
         % sig_quality.mat file is available. If this is the case, the user
         % doesn't get the option to re do the signal selection. Delete the file
         % sig_quality.mat if you would like to re do this selection). 
-        if ~exist(sig_quality_fname, 'file')
-    
-            for v = 1 : numel(var_labels)
-                x = tld.(sprintf('%s', var_labels{v}));
-                time = tld.t_average;
-                events = tld.t_stop;
-    
-                fprintf('\nassessing "%s"\n', var_labels{v})
-                %sig_quality(v, :) = check_signals(x, time, events);
-                if ~strcmp(dataset_label, 'Stockholm')
-                    sig_quality(v, :) = check_signals(x, time, events);
-                else
-                    sig_quality(v, :) = sum(isnan(x),1)==0;
-                end
+     if ~exist(sig_quality_fname, 'file')
+        
+        sig_quality = true(numel(var_labels), tld.counter - 1);  % Preallocate as requested
+
+        % Define variable pairs: mean and std for each type
+        paired_vars = {'hr_mean', 'hr_std'; 'sats_mean', 'sats_std'; 'rr_mean', 'rr_std'};
+
+        for p = 1 : size(paired_vars, 1)
+            x1 = tld.(paired_vars{p, 1});
+            x2 = tld.(paired_vars{p, 2});
+            x = cat(3, x1, x2);  % Combine into 3D array
+            time = tld.t_average;
+            events = tld.t_stop;
+
+            fprintf('\nassessing "%s" and "%s"\n', paired_vars{p, 1}, paired_vars{p, 2});
+
+            if ~strcmp(dataset_label, 'Stockholm')
+                [found1, found2] = check_signals_dual(x, time, events, t_limits);
+            else
+                found1 = sum(isnan(x1), 1) == 0;
+                found2 = sum(isnan(x2), 1) == 0;
             end
-    
-            % save output
-            save(sig_quality_fname, 'sig_quality')
-    
+
+            % Store results in preallocated sig_quality
+            idx1 = find(strcmp(var_labels, paired_vars{p, 1}));
+            idx2 = find(strcmp(var_labels, paired_vars{p, 2}));
+            sig_quality(idx1, :) = found1;
+            sig_quality(idx2, :) = found2;
         end
-    
+
+        % Save output
+        save(sig_quality_fname, 'sig_quality');
     end
+end
     close
     load(sig_quality_fname, 'sig_quality')
     
@@ -206,7 +258,7 @@ end
 rates_per_kilo = tld.transfusion_rate./tld.TESTOD_MostRecentWeight;
 vol_per_kilo = tld.transfusion_volume./tld.TESTOD_MostRecentWeight;
 
-tld.good_rate_volume = (rates_per_kilo >= 3) & vol_per_kilo >= 8;
+tld.good_rate_volume = ((rates_per_kilo >= 3) & vol_per_kilo >= 8)|(isnan(rates_per_kilo)|isnan(vol_per_kilo));
 
 sig_quality(:, ~tld.good_rate_volume) = 0;
 
@@ -260,10 +312,11 @@ for v = 1 : numel(var_labels)
     xlim([tld.t_average([1, end])])
     ylim([min(m - s), max(m + s)])
 end
-orient(fig, 'landscape')
+figure(fig); 
+orient(fig, 'landscape');
 exportgraphics(fig, sprintf('%s/timelocked_data_all_patients_%s.jpg',plot_dir,dataset_label), 'BackgroundColor', 'none','Resolution',300);
 print(sprintf('%s/timelocked_data_all_patients_%s.pdf',plot_dir,dataset_label), '-dpdf', '-bestfit')
-savefig(fig, sprintf('%s/timelocked_data_all_patients_%s.fig',plot_dir,dataset_label) )
+savefig(fig, sprintf('%s/timelocked_data_all_patients_%s.fig',plot_dir,dataset_label) );
 
 %cluster analysis
 cluster_analysis = false;
@@ -318,12 +371,21 @@ end
 
 
 if 1
-    [signals, colors, all_colors,signal_increase,signal_decrease,tld.pre_post_hb,all_colors_names] = find_responders(tld, std_threshold, 6, 0);
+    [signals, colors, all_colors,signal_increase,signal_decrease,tld.pre_post_hb,all_colors_names] = find_responders(tld, std_threshold, 6); %deleted additional argument: , 0
     
     %find subject labels for Oxford data
     if strcmp(dataset_label, 'Oxford')
         all_unique_patid = unique(subjectid);
         patient_ids_integer = str2num(subjectid(:,end-1:end));
+%         end
+    end
+
+    if strcmp(dataset_label, 'Imperial')
+        all_unique_patid=unique(subjectid);
+        patient_ids_integer = 1 : numel(subjectid);
+%         for s = 1 : numel(subjectid)
+%             patient_ids_integer(s)=s; % str2num(subjectid{s}(3 : end));
+%         end
     end
     
     
@@ -346,7 +408,7 @@ if 1
         
         % Good quality recordings
         idx_good_quality = sig_quality(isig, :) == 1;
-        if strcmp(dataset_label, 'Oxford') || strcmp(dataset_label, 'Stockholm')
+        if strcmp(dataset_label, 'Oxford') || strcmp(dataset_label, 'Stockholm') || strcmp(dataset_label, 'Imperial')
             % Count unique patients with good quality recordings of the VS
             npatsig = size(unique(patient_ids_integer(idx_good_quality)), 1);
             idx_full_hb = filter_full_hb(tld.pre_post_hb);
@@ -385,7 +447,25 @@ if 1
             end
             fprintf('\tcolor=%s\n%s\n', all_colors_names{icolor}, displayname);
             
-            print_demographics(tld.BIRTH_weight(unique_patid_sigcolor),tld.BIRTH_Gender(unique_patid_sigcolor),tld.PMA(unique_patid_sigcolor))
+            if strcmp(dataset_label, 'Imperial')
+                patid_included = patient_ids_integer(idx_sigcolor);    
+               % patid_included = subjectid(idx_sigcolor);
+                [~, idx] = unique(patid_included);
+                unique_patid_sigcolor = patid_included(idx);
+                    
+                npatsigcolor = size(idx,1);
+    
+                displayname = sprintf(displayname, sum(idx_sigcolor), npatsigcolor );
+
+            end
+                %fprintf('color=%s\n%s\n', all_colors_names{icolor},
+                %displayname); @Caroline
+                fprintf('color=%s\n%s\n', all_colors{icolor}, displayname);
+                
+                % set(findall(0, 'type', 'axes'), 'FontName', 'Times', 'Fontsize', 16, 'TickDir', 'out', 'box', 'off', 'linewidth', 2, 'ticklength', [0.01, 0.01])
+           
+                
+               % print_demographics(tld.BIRTH_weight(unique_patid_sigcolor),tld.BIRTH_Gender(unique_patid_sigcolor),tld.PMA(unique_patid_sigcolor))
             if ~strcmp(all_colors{icolor},'green')
                 data_sigcolor = squeeze(signals(isig, idx_sigcolor,:));
                 if size(data_sigcolor, 2)==1 %this happens if only 1 transfusion in group
@@ -470,7 +550,47 @@ if 1
     % save
     print(sprintf('%s/piechart_all_patients_%s.pdf', plot_dir, dataset_label),'-dpdf','-bestfit')
     
+
+%     %plot barcharts for type of responses
+    fig = figure;
+for isig = 1:numel(var_labels)
+    % Count responses
+    both = length(find(colors(isig,:) == 1));
+    increase = length(find(colors(isig,:) == 2));
+    decrease = length(find(colors(isig,:) == 3));
+    nochange = length(find(colors(isig,:) == 4));
+    tot_num = length(find(sig_quality(isig, :)));  % Ensure sig_quality is indexed correctly
+
+    % Normalize to percentages
+    values = [increase, decrease, nochange];
+    percentages = 100 * values / tot_num;
+
+    % Plot vertical stacked bar chart
+    subplot(ceil(numel(var_labels)/3), 3, isig)
+    b = bar(1, percentages, 'stacked');
+    b(1).FaceColor = [0.47, 0.87, 0.47];  % increase - green
+    b(2).FaceColor = [0.65, 0.77, 0.90];  % decrease - blue
+    b(3).FaceColor = [0.99, 0.99, 0.59];  % no change - yellow
+    ylim([0 100])
+    ylabel('% of patients')
+    title(y_names{isig});
+    set(gca, 'XTickLabel', '', 'XTick', []);
 end
+
+% Aesthetic settings
+set(findall(0, 'type', 'axes'), 'FontName', 'Times', 'Fontsize', 24, ...
+    'TickDir', 'out', 'Box', 'off', 'LineWidth', 2, 'TickLength', [0.01, 0.01]);
+
+set(gcf, 'Units', 'normalized', 'OuterPosition', [0 0 0.5 0.5]);
+
+% Export
+exportgraphics(gcf, sprintf('%s/barplot_all_patients_%s.jpg', plot_dir, dataset_label), ...
+    'BackgroundColor', 'none', 'Resolution', 300);
+
+print(sprintf('%s/barplot_all_patients_%s.pdf', plot_dir, dataset_label), '-dpdf', '-bestfit');
+
+end
+
 end
 
 function idx_full_hb = filter_full_hb(data)

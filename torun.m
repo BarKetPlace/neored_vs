@@ -29,6 +29,11 @@ if strcmp(name, 'cmm0958')
     dataset_label = 'Stockholm';
 end
 
+if contains(name, 'Mac')
+    addpath('lib/palm/palm-alpha119/')
+    dataset_label = 'Imperial';
+end
+
 
 %% plot average and find responders and non-responders
 
@@ -45,7 +50,17 @@ t_limits = [-12, 12]; % hours
 t_baseline = [-6, 0]; % hours
 check_sig = true;
 std_threshold = 1.0;
-preprocessed_data_folder = '../preprocessed';
+if contains(name, 'Mac')
+    preprocessed_data_folder = 'cached';
+    addpath(fullfile(pwd, 'cached'))
+else
+    preprocessed_data_folder = '../preprocessed';
+end
+
+
+if ~exist(preprocessed_data_folder, 'dir')
+    error('check if "preprocessed"-folder is part of the current folder')
+end
 
 sig_quality_fname = sprintf('%s/sig_quality_%s.mat',preprocessed_data_folder, dataset_label);
 transfusion_rawdata_fname = strcat(preprocessed_data_folder,'/rawtransfusiondata.mat');
@@ -89,6 +104,10 @@ for ianalysis = 1:3
         % Uses the variables evt_start_days_upper and evt_start_days_lower
         define_subjects_Berlin
     end
+    if strcmp(dataset_label, 'Imperial')
+        % Uses the variables evt_start_days_upper and evt_start_days_lower
+        define_subjects_Imperial
+    end
 
     [signals, responders,signal_increase,signal_decrease,var_labels,subjectid,studyid,sig_quality,tld] = plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, ...
            check_sig, dataset_label, std_threshold, plot_dir, sig_quality_fname, transfusion_rawdata_fname);
@@ -119,13 +138,13 @@ end
 
 %% Berlin
 
-define_subjects_Berlin;
-t_window = 1; % hours
-t_overlap = 0.5; % hours
-t_limits = [-6, 12]; % hours
-t_baseline = [-6, 0]; % hours
-check_sig = true;
-dataset_label = 'Berlin';
-std_threshold = 3;
-ibi_boolean = false;
-plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, check_sig, dataset_label, std_threshold)
+% define_subjects_Berlin;
+% t_window = 1; % hours
+% t_overlap = 0.5; % hours
+% t_limits = [-6, 12]; % hours
+% t_baseline = [-6, 0]; % hours
+% check_sig = true;
+% dataset_label = 'Berlin';
+% std_threshold = 3;
+% ibi_boolean = false;
+% plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, check_sig, dataset_label, std_threshold)
