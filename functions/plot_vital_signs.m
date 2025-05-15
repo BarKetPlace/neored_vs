@@ -536,7 +536,27 @@ if 1
     
         subplot(ceil(numel(var_labels)/3),3,isig)
         
-        piechart([increase,decrease,nochange],["increase","decrease","no change"],'LegendVisible', 'off', 'FontSize', 14)
+         % Data and labels
+         values = [increase, decrease, nochange];
+         labels = {'Increase', 'Decrease', 'No Change'};
+         percentages = 100 * values / tot_num;
+         label_strings = arrayfun(@(n, p) sprintf('%s\n%d (%.1f%%)', labels{n}, values(n), percentages(n)), 1:3, percentages, 'UniformOutput', false);
+
+         subplot(ceil(numel(var_labels)/3), 3, isig)
+
+         % Plot pie
+         p = pie(values, label_strings);
+
+         % Set colors
+         slice_colors = {
+         [0.99, 150/255, 0],   % Increase (orange)
+         [0.65, 0.77, 0.90],   % Decrease (blue)
+         [1, 0.41, 0.38]       % No change (red)
+         };
+
+         for i = 1:2:length(p)             
+             set(p(i), 'FaceColor', slice_colors{(i + 1)/2});
+         end
         title(y_names{isig});
 
     end
@@ -554,27 +574,41 @@ if 1
 %     %plot barcharts for type of responses
     fig = figure;
 for isig = 1:numel(var_labels)
-    % Count responses
-    both = length(find(colors(isig,:) == 1));
-    increase = length(find(colors(isig,:) == 2));
-    decrease = length(find(colors(isig,:) == 3));
-    nochange = length(find(colors(isig,:) == 4));
-    tot_num = length(find(sig_quality(isig, :)));  % Ensure sig_quality is indexed correctly
+    % Counts
+    both = sum(colors(isig,:) == 1);  % Ignored
+    increase = sum(colors(isig,:) == 2);
+    decrease = sum(colors(isig,:) == 3);
+    nochange = sum(colors(isig,:) == 4);
+    tot_num = sum(sig_quality(isig,:));
 
-    % Normalize to percentages
-    values = [increase, decrease, nochange];
+    % Values and percentages
+    values = [increase, nochange, decrease];
     percentages = 100 * values / tot_num;
 
-    % Plot vertical stacked bar chart
+    % Plot stacked bar
     subplot(ceil(numel(var_labels)/3), 3, isig)
     b = bar(1, percentages, 'stacked');
-    b(1).FaceColor = [0.47, 0.87, 0.47];  % increase - green
-    b(2).FaceColor = [0.65, 0.77, 0.90];  % decrease - blue
-    b(3).FaceColor = [0.99, 0.99, 0.59];  % no change - yellow
+
+    % Set consistent colors
+    b(1).FaceColor = [0.99, 150/255, 0];   % Increase (orange)
+    b(2).FaceColor = [1, 0.41, 0.38];      % No change (red)
+    b(3).FaceColor = [0.65, 0.77, 0.90];   % Decrease (blue)
+   
+
     ylim([0 100])
     ylabel('% of patients')
     title(y_names{isig});
     set(gca, 'XTickLabel', '', 'XTick', []);
+
+    % Add text labels on bars
+    y_offset = 0;
+    for i = 1:3
+        text(1, y_offset + percentages(i)/2, ...
+            sprintf('%d\n(%.1f%%)', values(i), percentages(i)), ...
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'middle', ...
+            'FontSize', 12, 'Color', 'k');
+        y_offset = y_offset + percentages(i);
+    end
 end
 
 % Aesthetic settings
