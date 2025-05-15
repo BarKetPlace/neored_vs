@@ -122,8 +122,8 @@ for ianalysis = 1:3
     
     % Create one table for each variable of interest
     for v=1:length(var_labels)
-        T=table(subjectid, studyid, tld.pre_post_hb(1,:)',tld.pre_post_hb(2,:)',tld.TESTOD_CurrentVentilation',tld.TESTOD_MostRecentWeight', tld.PMA', tld.BIRTH_Gender',increase_responder(v,:)',decrease_responder(v,:)',signal_increase(v,:)',signal_decrease(v,:)', ...
-            'VariableNames',{'Subject ID';'Study ID';'StartHB';'EndHB';'TESTOD_CurrentVentilation'; 'TESTOD_MostRecentWeight';'PMA';'BIRTH_Gender';'Increase Response';'Decrease Response';'Average Signal Increase';'Average Signal Decrease'});
+        T=table(subjectid, studyid, tld.pre_post_hb(1,:)',tld.pre_post_hb(2,:)',tld.TESTOD_CurrentVentilation',tld.TESTOD_MostRecentWeight', tld.PMA',tld.evt_start_pna_days', tld.BIRTH_Gender',increase_responder(v,:)',decrease_responder(v,:)',signal_increase(v,:)',signal_decrease(v,:)', ...
+            'VariableNames',{'Subject ID';'Study ID';'StartHB';'EndHB';'TESTOD_CurrentVentilation'; 'TESTOD_MostRecentWeight';'PMA';'PNA';'BIRTH_Gender';'Increase Response';'Decrease Response';'Average Signal Increase';'Average Signal Decrease'});
         excel_fname = strcat(plot_dir,'/tables/', var_labels(v), sprintf('_%s.xlsx',dataset_label));
         writetable(T, cell2mat(excel_fname));
     end

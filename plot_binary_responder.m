@@ -14,6 +14,7 @@ for fname_stem = all_stems
     %demographics
     sex=categorical(data_table.BIRTH_Gender);
     PMA=data_table.PMA/7;
+    PNA=data_table.PNA;
     weight=data_table.TESTOD_MostRecentWeight;
     ventilation=categorical(data_table.TESTOD_CurrentVentilation);
     
@@ -41,6 +42,13 @@ for fname_stem = all_stems
     title(fname_stem, 'Interpreter', 'none')
     exportgraphics(gcf, strcat(folder,fname_stem,'_boxplots_pma.jpg'));
     %print(strcat(folder,fname_stem,'_boxplots_pma.jpg'),'-dpdf','-bestfit')
+
+    fig=figure; boxplot(PNA,response); ylabel('PNA (days)','fontsize',15); set(gca,'XTickLabel',{'Non','Decrease','Increase'}); set(gca,'fontsize',15)
+    %set(gcf, 'Units', 'Normalized', 'OuterPosition', [0, 0.04, 1, 0.96]);
+    title(fname_stem, 'Interpreter', 'none')
+    exportgraphics(gcf, strcat(folder,fname_stem,'_boxplots_pna.jpg'));
+    %print(strcat(folder,fname_stem,'_boxplots_pma.jpg'),'-dpdf','-bestfit')
+
 
     fig=figure; boxplot(weight,response); ylabel('Weight (kg)','fontsize',15); set(gca,'fontsize',15); set(gca,'XTickLabel',{'Non','Decrease','Increase'});
     %set(gcf, 'Units', 'Normalized', 'OuterPosition', [0, 0.04, 1, 0.96]);

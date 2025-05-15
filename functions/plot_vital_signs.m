@@ -315,7 +315,7 @@ end
 figure(fig); 
 orient(fig, 'landscape');
 exportgraphics(fig, sprintf('%s/timelocked_data_all_patients_%s.jpg',plot_dir,dataset_label), 'BackgroundColor', 'none','Resolution',300);
-print(sprintf('%s/timelocked_data_all_patients_%s.pdf',plot_dir,dataset_label), '-dpdf', '-bestfit')
+print(fig, '-dpdf', '-bestfit', sprintf('%s/timelocked_data_all_patients_%s.pdf', plot_dir, dataset_label));
 savefig(fig, sprintf('%s/timelocked_data_all_patients_%s.fig',plot_dir,dataset_label) );
 
 %cluster analysis
@@ -465,7 +465,7 @@ if 1
                 % set(findall(0, 'type', 'axes'), 'FontName', 'Times', 'Fontsize', 16, 'TickDir', 'out', 'box', 'off', 'linewidth', 2, 'ticklength', [0.01, 0.01])
            
                 
-               % print_demographics(tld.BIRTH_weight(unique_patid_sigcolor),tld.BIRTH_Gender(unique_patid_sigcolor),tld.PMA(unique_patid_sigcolor))
+               print_demographics(tld.BIRTH_weight(unique_patid_sigcolor),tld.BIRTH_Gender(unique_patid_sigcolor),tld.PMA(unique_patid_sigcolor))
             if ~strcmp(all_colors{icolor},'green')
                 data_sigcolor = squeeze(signals(isig, idx_sigcolor,:));
                 if size(data_sigcolor, 2)==1 %this happens if only 1 transfusion in group
