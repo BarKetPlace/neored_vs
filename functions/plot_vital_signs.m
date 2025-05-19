@@ -316,7 +316,7 @@ for v = 1 : numel(var_labels)
     % mean subtract the moving average to mean of t_baseline
     idx_baseline = tld.t_average > t_baseline(1) & tld.t_average < t_baseline(2);
     tld.(var_labels{v}) = tld.(var_labels{v}) - mean(tld.(var_labels{v})(idx_baseline, :), 'omitnan');
-    
+
 
     % plot mean and standard deviations
     subplot(2, numel(y_names) / 2, v);
@@ -331,23 +331,25 @@ for v = 1 : numel(var_labels)
     plot([0, 0], [min(m - s), max(m + s)], 'k--', 'LineWidth', 2);
     plot(t_limits, [0, 0], 'k--', 'LineWidth', 1);
     %plot([mean(tld.t_stop(idx_include), 'omitnan'), mean(tld.t_stop(idx_include), 'omitnan')], [min(m - s), max(m + s)], 'k--', 'LineWidth', 2);
-stop_time = mean(tld.t_stop(idx_include), 'omitnan');
-ymin = min(m - s);
-ymax = max(m + s);
+    %instead of previous version (above) make sure to plot the mean stop
+    %time and deal with missing data by inserting standard dotted instead of dashed line at +4h 
+    stop_time = mean(tld.t_stop(idx_include), 'omitnan');
+    ymin = min(m - s);
+    ymax = max(m + s);
 
-if ~isnan(stop_time) && isfinite(stop_time)
-    plot([stop_time, stop_time], [ymin, ymax], 'k--', 'LineWidth', 2);
-else
-    % Fallback: vertical dotted line at x = 4
-    plot([4, 4], [ymin, ymax], 'k:', 'LineWidth', 2);
-end
+    if ~isnan(stop_time) && isfinite(stop_time)
+        plot([stop_time, stop_time], [ymin, ymax], 'k--', 'LineWidth', 2);
+    else
+        % Fallback: vertical dotted line at x = 4
+        plot([4, 4], [ymin, ymax], 'k:', 'LineWidth', 1);
+    end
     title(sprintf('%s', var_labels{v}), 'Interpreter', 'None');
     xlabel('Time [hours]');
     ylabel(y_names{v});
     xlim([tld.t_average([1, end])])
     ylim([min(m - s), max(m + s)])
 end
-figure(fig); 
+figure(fig);
 orient(fig, 'landscape');
 exportgraphics(fig, sprintf('%s/timelocked_data_all_patients_%s.jpg',plot_dir,dataset_label), 'BackgroundColor', 'none','Resolution',300);
 print(fig, '-dpdf', '-bestfit', sprintf('%s/timelocked_data_all_patients_%s.pdf', plot_dir, dataset_label));
@@ -358,7 +360,7 @@ cluster_analysis = false;
 if cluster_analysis
     pre = find(tld.t_average<0);
     post = find(tld.t_average>0);
-    
+
     if strcmp(dataset_label, 'Stockholm')
         idx_include_hr = sig_quality(1,:);
         idx_include_sats = sig_quality(2,:);
