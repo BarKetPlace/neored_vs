@@ -208,40 +208,66 @@ else
         % extract signal quality (for now, the code will check if the
         % sig_quality.mat file is available. If this is the case, the user
         % doesn't get the option to re do the signal selection. Delete the file
-        % sig_quality.mat if you would like to re do this selection). 
-     if ~exist(sig_quality_fname, 'file')
-        
-        sig_quality = true(numel(var_labels), tld.counter - 1);  % Preallocate as requested
+        % sig_quality.mat if you would like to re do this selection).
+        if ~exist(sig_quality_fname, 'file')
 
-        % Define variable pairs: mean and std for each type
-        paired_vars = {'hr_mean', 'hr_std'; 'sats_mean', 'sats_std'; 'rr_mean', 'rr_std'};
+            auto_sig_check=1
+            man_sig_check=0
 
-        for p = 1 : size(paired_vars, 1)
-            x1 = tld.(paired_vars{p, 1});
-            x2 = tld.(paired_vars{p, 2});
-            x = cat(3, x1, x2);  % Combine into 3D array
-            time = tld.t_average;
-            events = tld.t_stop;
+            sig_quality = true(numel(var_labels), tld.counter - 1);  % Preallocate as requested
 
-            fprintf('\nassessing "%s" and "%s"\n', paired_vars{p, 1}, paired_vars{p, 2});
-
-            if ~strcmp(dataset_label, 'Stockholm')
-                [found1, found2] = check_signals_dual(x, time, events, t_limits);
-            else
-                found1 = sum(isnan(x1), 1) == 0;
-                found2 = sum(isnan(x2), 1) == 0;
+            if auto_sig_check
+                %automatic checking
+                %must have at least 3 hours of baseline in the 6 hours before start and 6 hours post - can
+                %change this in next 2 lines
+                pre_min_ind=3*t_window/t_overlap;
+                post_min_ind=6*t_window/t_overlap;
+                pre_ind=intersect(find(tld.t_average<0),find(tld.t_average>=-6));
+                post_ind=find(tld.t_average>=0);
+                for v = 1 : numel(var_labels)
+                    x = tld.(sprintf('%s', var_labels{v}));
+                    for u=1:size(x,2)
+                        if length(find(~isnan(x(pre_ind,u))))>=pre_min_ind && length(find(~isnan(x(post_ind,u))))>=post_min_ind
+                            sig_quality(v, u)=true;
+                        else
+                            sig_quality(v,u)=false;
+                        end
+                    end
+                end
             end
 
-            % Store results in preallocated sig_quality
-            idx1 = find(strcmp(var_labels, paired_vars{p, 1}));
-            idx2 = find(strcmp(var_labels, paired_vars{p, 2}));
-            sig_quality(idx1, :) = found1;
-            sig_quality(idx2, :) = found2;
+            if man_sig_check
+                % Define variable pairs: mean and std for each type
+                paired_vars = {'hr_mean', 'hr_std'; 'sats_mean', 'sats_std'; 'rr_mean', 'rr_std'};
+
+                for p = 1 : size(paired_vars, 1)
+                    x1 = tld.(paired_vars{p, 1});
+                    x2 = tld.(paired_vars{p, 2});
+                    x = cat(3, x1, x2);  % Combine into 3D array
+                    time = tld.t_average;
+                    events = tld.t_stop;
+
+                    fprintf('\nassessing "%s" and "%s"\n', paired_vars{p, 1}, paired_vars{p, 2});
+
+                    if ~strcmp(dataset_label, 'Stockholm')
+                        [found1, found2] = check_signals_dual(x, time, events, t_limits);
+                    else
+                        found1 = sum(isnan(x1), 1) == 0;
+                        found2 = sum(isnan(x2), 1) == 0;
+                    end
+
+                    % Store results in preallocated sig_quality
+                    idx1 = find(strcmp(var_labels, paired_vars{p, 1}));
+                    idx2 = find(strcmp(var_labels, paired_vars{p, 2}));
+                    sig_quality(idx1, :) = found1;
+                    sig_quality(idx2, :) = found2;
+                end
+            end
+
+            % Save output
+            save(sig_quality_fname, 'sig_quality');
         end
 
-        % Save output
-        save(sig_quality_fname, 'sig_quality');
-    end
 end
     close
     load(sig_quality_fname, 'sig_quality')
@@ -304,8 +330,17 @@ for v = 1 : numel(var_labels)
     patch([tld.t_average; tld.t_average(end : -1 : 1)], [m + s; m(end : -1 : 1) - s(end : -1 : 1)], [0.5, 0.5, 0.5], 'FaceAlpha', 0.5, 'EdgeColor', [1, 1, 1]);
     plot([0, 0], [min(m - s), max(m + s)], 'k--', 'LineWidth', 2);
     plot(t_limits, [0, 0], 'k--', 'LineWidth', 1);
-    plot([mean(tld.t_stop(idx_include), 'omitnan'), mean(tld.t_stop(idx_include), 'omitnan')], [min(m - s), max(m + s)], 'k--', 'LineWidth', 2);
+    %plot([mean(tld.t_stop(idx_include), 'omitnan'), mean(tld.t_stop(idx_include), 'omitnan')], [min(m - s), max(m + s)], 'k--', 'LineWidth', 2);
+stop_time = mean(tld.t_stop(idx_include), 'omitnan');
+ymin = min(m - s);
+ymax = max(m + s);
 
+if ~isnan(stop_time) && isfinite(stop_time)
+    plot([stop_time, stop_time], [ymin, ymax], 'k--', 'LineWidth', 2);
+else
+    % Fallback: vertical dotted line at x = 4
+    plot([4, 4], [ymin, ymax], 'k:', 'LineWidth', 2);
+end
     title(sprintf('%s', var_labels{v}), 'Interpreter', 'None');
     xlabel('Time [hours]');
     ylabel(y_names{v});

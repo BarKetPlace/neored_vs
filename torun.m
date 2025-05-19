@@ -109,8 +109,7 @@ for ianalysis = 1:3
         define_subjects_Imperial
     end
 
-    [signals, responders,signal_increase,signal_decrease,var_labels,subjectid,studyid,sig_quality,tld] = plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, ...
-           check_sig, dataset_label, std_threshold, plot_dir, sig_quality_fname, transfusion_rawdata_fname);
+    [signals, responders,signal_increase,signal_decrease,var_labels,subjectid,studyid,sig_quality,tld] = plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, check_sig, dataset_label, std_threshold, plot_dir, sig_quality_fname, transfusion_rawdata_fname);
 
     %% Create table of results and save as excel files
     increase_responder=zeros(size(responders));
