@@ -140,7 +140,7 @@ for e = 1 : numel(idx_events)
         if vs.weight_kg_pre > 5
             vs.weight_kg_pre
         end
-    
+        
     end
     if strcmp(vs.dataset_label, 'Imperial')
         tld.BIRTH_Gender{end+1} = vs.sex;
@@ -170,7 +170,12 @@ for e = 1 : numel(idx_events)
         tmp = interp1(time_locked(idx_time),vs.HR(idx_time),tld.time_ref);
     end
     
-    tld.hr(:, tld.counter) = tmp - mean(vs.HR(idx_baseline), 'omitnan'); %interpolate to account for sometimes sporadic sampling rate (particularly in Berlin data)
+    if strcmp(vs.dataset_label, 'Stockholm')
+        tld.hr(idx_shift, tld.counter) = tmp - mean(vs.HR(idx_baseline), 'omitnan'); %interpolate to account for sometimes sporadic sampling rate (particularly in Berlin data)
+    else
+        tld.hr(:, tld.counter) = tmp - mean(vs.HR(idx_baseline), 'omitnan'); %interpolate to account for sometimes sporadic sampling rate (particularly in Berlin data)
+    end
+    
     tld.hr(tld.hr(:, tld.counter) == 0, tld.counter) = NaN;
     
     tmp = vs.sats(idx_time);
@@ -179,7 +184,12 @@ for e = 1 : numel(idx_events)
         tld.sats(:, tld.counter) = NaN(size(tld.time_ref, 2), 1);
         tmp = interp1(time_locked(idx_time),vs.sats(idx_time),tld.time_ref);
     end
-    tld.sats(:, tld.counter) = tmp - mean(vs.sats(idx_baseline), 'omitnan');
+    if strcmp(vs.dataset_label, 'Stockholm')
+        tld.sats(idx_shift, tld.counter) = tmp - mean(vs.sats(idx_baseline), 'omitnan');
+    else
+        tld.sats(:, tld.counter) = tmp - mean(vs.sats(idx_baseline), 'omitnan');
+    end
+
     tld.sats(tld.sats(:, tld.counter) == 0, tld.counter) = NaN;
 
     tmp = vs.RR(idx_time);
@@ -188,7 +198,12 @@ for e = 1 : numel(idx_events)
         tld.rr(:, tld.counter) = NaN(size(tld.time_ref, 2), 1);
         tmp = interp1(time_locked(idx_time),vs.RR(idx_time),tld.time_ref) ;
     end
-    tld.rr(:, tld.counter) = tmp - mean(vs.RR(idx_baseline), 'omitnan');
+    if strcmp(vs.dataset_label, 'Stockholm')
+        tld.rr(idx_shift, tld.counter) = tmp - mean(vs.RR(idx_baseline), 'omitnan');
+    else
+        tld.rr(:, tld.counter) = tmp - mean(vs.RR(idx_baseline), 'omitnan');
+    end
+    
     tld.rr(tld.rr(:, tld.counter) == 0, tld.counter) = NaN;
     
     %tmp = vs.fiO2(idx_time);
