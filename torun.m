@@ -131,6 +131,9 @@ for ianalysis = 1:3
     
     plot_binary_responder
     close all
+
+    investigate_correlations
+    close all
 end
 
 
