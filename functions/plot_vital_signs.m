@@ -211,8 +211,8 @@ else
         % sig_quality.mat if you would like to re do this selection).
         if ~exist(sig_quality_fname, 'file')
 
-            auto_sig_check=1
-            man_sig_check=0
+            auto_sig_check=1;
+            man_sig_check=0;
 
             sig_quality = true(numel(var_labels), tld.counter - 1);  % Preallocate as requested
 
