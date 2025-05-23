@@ -54,6 +54,9 @@ if nargin < 6, dataset_label = 'Oxford'; end
 if nargin < 7, std_threshold = 1.5; end
 
 
+plot_subject_specific=false;
+auto_sig_check=1;
+
 % check the availability of the functions folder
 if exist(transfusion_rawdata_fname)
     load(transfusion_rawdata_fname)
@@ -169,7 +172,7 @@ else
     
         % time-lock data
         tld = time_lock_data(vs, tld, t_limits, t_baseline, fs);
-        %tld_nocorrection = time_lock_data_nocorrection(vs, tld_nocorrection, t_limits, fs);
+        tld_nocorrection = time_lock_data_nocorrection(vs, tld_nocorrection, t_limits, fs);
         
         if strcmp(dataset_label, 'Oxford')
             n = length(find(contains(vs.events_vital_signs, 'transfusion') & contains(vs.events_vital_signs, 'start')));
@@ -211,9 +214,6 @@ else
         % sig_quality.mat if you would like to re do this selection).
         if ~exist(sig_quality_fname, 'file')
 
-            auto_sig_check=1;
-            man_sig_check=0;
-
             sig_quality = true(numel(var_labels), tld.counter - 1);  % Preallocate as requested
 
             if auto_sig_check
@@ -234,9 +234,7 @@ else
                         end
                     end
                 end
-            end
-
-            if man_sig_check
+            else
                 % Define variable pairs: mean and std for each type
                 paired_vars = {'hr_mean', 'hr_std'; 'sats_mean', 'sats_std'; 'rr_mean', 'rr_std'};
 
@@ -292,14 +290,14 @@ tld.sig_quality = sig_quality;
 
 
 % identify bradycardia, tachycardia, desats
-%time_events = identify_desatbradytachy(tld_nocorrection);
+time_events = identify_desatbradytachy(tld_nocorrection);
 % Hr, Sats, rr
-%hr_quality = sig_quality(1, :);
-%sats_quality = sig_quality(2, :);
-%time_events.desat = time_events.desat(sats_quality);
-%time_events.tachy = time_events.tachy(hr_quality);
-%time_events.brady = time_events.brady(hr_quality);
-%save(sprintf('../results/time_events_%s.mat',dataset_label), 'time_events');
+hr_quality = sig_quality(1, :);
+sats_quality = sig_quality(2, :);
+time_events.desat = time_events.desat(sats_quality);
+time_events.tachy = time_events.tachy(hr_quality);
+time_events.brady = time_events.brady(hr_quality);
+save(sprintf('../results/time_events_%s.mat',dataset_label), 'time_events');
 
 % plot mean response over all transfusions
 fig = figure;
@@ -371,7 +369,6 @@ if cluster_analysis
         idx_include_rr = idx_include;
     end
 
-
     dataPrehrmean=tld.hr_mean(pre,idx_include_hr);
     dataPosthrmean=tld.hr_mean(post,idx_include_hr);
     disp('cluster analysis HR mean') 
@@ -406,9 +403,8 @@ end
 % find responders
 %find_responders(tld, std_threshold)
 
-
 if 1
-    [signals, colors, all_colors,signal_increase,signal_decrease,tld.pre_post_hb,all_colors_names] = find_responders(tld, std_threshold, 6); %deleted additional argument: , 0
+    [signals, colors, all_colors,signal_increase,signal_decrease,tld.pre_post_hb,all_colors_names] = find_responders(tld, std_threshold, 6,plot_subject_specific); %deleted additional argument: , 0
     
     %find subject labels for Oxford data
     if strcmp(dataset_label, 'Oxford')
