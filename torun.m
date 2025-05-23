@@ -73,23 +73,22 @@ for ianalysis = 1:3
 
     % Choice of cutoff & output directory
     if ianalysis==1 % events below 2w only
-        evt_start_days_upper = 2*7;
+        evt_start_days_upper = 1000000000;
         evt_start_days_lower = 0;
-        plot_dir = '../results_below_2w';
+        plot_dir = '../results';
 
     elseif ianalysis==2 % events above 2w only
-
         evt_start_days_upper = 1000000000;
         evt_start_days_lower = 2*7;
         plot_dir = '../results_above_2w';
     
     elseif ianalysis==3 % events above 2w only
-        evt_start_days_upper = 1000000000;
+        evt_start_days_upper = 2*7;
         evt_start_days_lower = 0;
-        plot_dir = '../results';
+        plot_dir = '../results_below_2w';
     
     end
-
+    
     %% Find the relevant data files
     if strcmp(dataset_label, 'Stockholm')
         % Uses the variables evt_start_days_upper and evt_start_days_lower
@@ -132,8 +131,8 @@ for ianalysis = 1:3
     plot_binary_responder
     close all
 
-    investigate_correlations
-    close all
+    %investigate_correlations
+    %close all
 end
 
 
