@@ -1,5 +1,7 @@
-function print_dataset_description(tld, patient_ids_, signals_, dataset_label)
+function print_dataset_description(tld, signals_, dataset_label)
     % Get the index of only one patient ID
+    patient_ids_ = tld.subjectid;
+
     signals = signals_(:,tld.good_rate_volume,:);
     patient_ids = patient_ids_(tld.good_rate_volume);
     PNA_evt_start = tld.evt_start_pna_days(tld.good_rate_volume)/7;

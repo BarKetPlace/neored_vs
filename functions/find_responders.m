@@ -1,4 +1,4 @@
-function [signals, colors,all_colors,signal_increase,signal_decrease,pre_post_hb,all_colors_names] = find_responders(tld, std_threshold, sample_threshold,plot_subject_specific)
+function [signals, colors,all_colors,signal_increase,signal_decrease,all_colors_names] = find_responders(tld, std_threshold, sample_threshold,plot_subject_specific)
 % - function find_responders(tld, std_threshold, sample_threshold) -- 
 % finds responders using pre-defined threshold
 %
@@ -40,10 +40,7 @@ colors = zeros(numel(var_labels), n_evts);
 signals = zeros(numel(var_labels), n_evts, T);
 signal_increase = zeros(numel(var_labels), n_evts);
 signal_decrease = zeros(numel(var_labels), n_evts);
-pre_post_hb = nan(2,n_evts);
-pre_post_hb(1,:)=tld.hb_pre;
 
-pre_post_hb(2,:)=tld.hb_post;
 
 for v = 1 : numel(var_labels)
     % find indexes pre- and post-transfusion start

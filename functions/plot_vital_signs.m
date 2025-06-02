@@ -1,4 +1,4 @@
-function [signals, colors,signal_increase,signal_decrease,var_labels,subjectid,studyid,sig_quality,tld]=plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, sig_check, dataset_label, std_threshold, plot_dir, ...
+function [signals, colors,signal_increase,signal_decrease,var_labels,tld]=plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, sig_check, dataset_label, std_threshold, plot_dir, ...
     sig_quality_fname,transfusion_rawdata_fname)
 % - plot_vital_signs(files, t_window, t_overlap, sig_check, dataset_label,
 % std_threshold) -- plots the vital signs responses after time-locking to 
@@ -87,7 +87,7 @@ else
     var_labels = {'hr_mean', 'sats_mean', 'rr_mean', 'hr_std', 'sats_std', 'rr_std'};
     
     if strcmp(dataset_label, 'Stockholm')
-        patient_ids= cell(size(files, 1),1);
+        subjectid= cell(size(files, 1),1);
     end
     
     for f = 1 : size(files, 1)
@@ -108,7 +108,7 @@ else
         vs.dataset_label = dataset_label;
         
         if strcmp(dataset_label, 'Stockholm')
-            [vs,studyid,patient_ids{f}] = standardize_stockholm(vs,studyid,files,f);
+            [vs,studyid,subjectid{f}] = standardize_stockholm(vs,studyid,files,f);
         end
         
         if strcmp(dataset_label, 'Berlin')
@@ -145,7 +145,7 @@ else
             vs.BP = vs.BP;
             vs.fiO2 = vs.fiO2;
         end
-    
+        
         % find transfusion starts
         % find transfusion starts - will skip data set if it can't find
         % transfusion start
@@ -169,7 +169,7 @@ else
         if strcmp(dataset_label, 'Imperial')
             fs=0.016;
         end
-    
+        
         % time-lock data
         tld = time_lock_data(vs, tld, t_limits, t_baseline, fs);
         tld_nocorrection = time_lock_data_nocorrection(vs, tld_nocorrection, t_limits, fs);
@@ -286,161 +286,79 @@ tld.good_rate_volume = ((rates_per_kilo >= 3) & vol_per_kilo >= 8)|(isnan(rates_
 
 sig_quality(:, ~tld.good_rate_volume) = 0;
 
-tld.sig_quality = sig_quality;
 
+tld.sig_quality = sig_quality;
+tld.pre_post_hb = nan(2,tld.counter-1);
+tld.pre_post_hb(1,:)=tld.hb_pre;
+tld.pre_post_hb(2,:)=tld.hb_post;
+tld.dataset_label = dataset_label;
+tld.subjectid = subjectid;
+tld.studyid = studyid;
 
 % identify bradycardia, tachycardia, desats
 time_events = identify_desatbradytachy(tld_nocorrection);
 % Hr, Sats, rr
-hr_quality = sig_quality(1, :);
-sats_quality = sig_quality(2, :);
+hr_quality = tld.sig_quality(1, :);
+sats_quality = tld.sig_quality(2, :);
+
 time_events.desat = time_events.desat(sats_quality);
 time_events.tachy = time_events.tachy(hr_quality);
 time_events.brady = time_events.brady(hr_quality);
-save(sprintf('../results/time_events_%s.mat',dataset_label), 'time_events');
-
-% plot mean response over all transfusions
-fig = figure;
-po = get(gcf, 'position');
-set(gcf, 'position', [po(1:2), 1600, 1000], 'name', 'timelocked_responses');
-
+save(sprintf('%s/time_events_%s.mat',plot_dir,dataset_label), 'time_events');
 
 y_names = {'Mean HR [bpm]', 'Mean Sats [%]', 'Mean RR [breaths/min]', 'Std HR [bpm]', 'Std Sats [%]', 'Std RR [breaths/min]'};
-if isfield(tld, 'ibi_locked'); y_names = [y_names, {'Resp rate [breaths/min]', 'Std IBI [sec]', 'Apnoea rate 5 sec [times/hour]', 'Apnoea rate 10 sec [times/hour]'}]; end
-%if isfield(tld, 'fiO2_mean'); y_names = [y_names, {'Mean fiO2 (%)','Mean Hb', 'Std fiO2 (%)','Std Hb'}]; end
 
-for v = 1 : numel(var_labels)
-
-    % mean subtract the moving average to mean of t_baseline
-    idx_baseline = tld.t_average > t_baseline(1) & tld.t_average < t_baseline(2);
-    tld.(var_labels{v}) = tld.(var_labels{v}) - mean(tld.(var_labels{v})(idx_baseline, :), 'omitnan');
+plot_timelocked_all_patients(tld, t_baseline, t_limits, var_labels, y_names, plot_dir,dataset_label);
 
 
-    % plot mean and standard deviations
-    subplot(2, numel(y_names) / 2, v);
-
-    idx_include = find(sig_quality(v, :));
-
-    m = mean(tld.(var_labels{v})(:, idx_include), 2, 'omitnan');
-    s = std(tld.(var_labels{v})(:, idx_include), [], 2, 'omitnan');
-    plot(tld.t_average, m, 'Color', [0.5, 0.5, 0.5], 'LineWidth', 2);
-    hold on;
-    patch([tld.t_average; tld.t_average(end : -1 : 1)], [m + s; m(end : -1 : 1) - s(end : -1 : 1)], [0.5, 0.5, 0.5], 'FaceAlpha', 0.5, 'EdgeColor', [1, 1, 1]);
-    plot([0, 0], [min(m - s), max(m + s)], 'k--', 'LineWidth', 2);
-    plot(t_limits, [0, 0], 'k--', 'LineWidth', 1);
-    %plot([mean(tld.t_stop(idx_include), 'omitnan'), mean(tld.t_stop(idx_include), 'omitnan')], [min(m - s), max(m + s)], 'k--', 'LineWidth', 2);
-    %instead of previous version (above) make sure to plot the mean stop
-    %time and deal with missing data by inserting standard dotted instead of dashed line at +4h 
-    stop_time = mean(tld.t_stop(idx_include), 'omitnan');
-    ymin = min(m - s);
-    ymax = max(m + s);
-
-    if ~isnan(stop_time) && isfinite(stop_time)
-        plot([stop_time, stop_time], [ymin, ymax], 'k--', 'LineWidth', 2);
-    else
-        % Fallback: vertical dotted line at x = 4
-        plot([4, 4], [ymin, ymax], 'k:', 'LineWidth', 1);
-    end
-    title(sprintf('%s', var_labels{v}), 'Interpreter', 'None');
-    xlabel('Time [hours]');
-    ylabel(y_names{v});
-    xlim([tld.t_average([1, end])])
-    ylim([min(m - s), max(m + s)])
-end
-figure(fig);
-orient(fig, 'landscape');
-exportgraphics(fig, sprintf('%s/timelocked_data_all_patients_%s.jpg',plot_dir,dataset_label), 'BackgroundColor', 'none','Resolution',300);
-print(fig, '-dpdf', '-bestfit', sprintf('%s/timelocked_data_all_patients_%s.pdf', plot_dir, dataset_label));
-savefig(fig, sprintf('%s/timelocked_data_all_patients_%s.fig',plot_dir,dataset_label) );
-
-%cluster analysis
+%Cluster analysis
 cluster_analysis = false;
 if cluster_analysis
-    pre = find(tld.t_average<0);
-    post = find(tld.t_average>0);
-
-    if strcmp(dataset_label, 'Stockholm')
-        idx_include_hr = sig_quality(1,:);
-        idx_include_sats = sig_quality(2,:);
-        idx_include_rr = sig_quality(3,:);
-    else
-        idx_include_hr = idx_include;
-        idx_include_sats = idx_include;
-        idx_include_rr = idx_include;
-    end
-
-    dataPrehrmean=tld.hr_mean(pre,idx_include_hr);
-    dataPosthrmean=tld.hr_mean(post,idx_include_hr);
-    disp('cluster analysis HR mean') 
-    montecarlo_fornewdata_differentsizes(dataPrehrmean', dataPosthrmean', 1/t_overlap, t_limits(1)+1, t_limits(2));
-    
-    dataPrehrsd=tld.hr_std(pre,idx_include_hr);
-    dataPosthrsd=tld.hr_std(post,idx_include_hr);
-    disp('cluster analysis HR SD') 
-    montecarlo_fornewdata_differentsizes(dataPrehrsd', dataPosthrsd', 1/t_overlap, t_limits(1)+1, t_limits(2));
-    
-    dataPresatsmean=tld.sats_mean(pre,idx_include_sats);
-    dataPostsatsmean=tld.sats_mean(post,idx_include_sats);
-    disp('cluster analysis Sats mean') 
-    montecarlo_fornewdata_differentsizes(dataPresatsmean', dataPostsatsmean', 1/t_overlap, t_limits(1)+1, t_limits(2));
-    
-    dataPresatssd=tld.sats_std(pre,idx_include_sats);
-    dataPostsatssd=tld.sats_std(post,idx_include_sats);
-    disp('cluster analysis Sats SD') 
-    montecarlo_fornewdata_differentsizes(dataPresatssd', dataPostsatssd', 1/t_overlap, t_limits(1)+1, t_limits(2));
-    
-    dataPrerrmean=tld.rr_mean(pre,idx_include_rr);
-    dataPostrrmean=tld.rr_mean(post,idx_include_rr);
-    disp('cluster analysis RR mean')
-    montecarlo_fornewdata_differentsizes(dataPrerrmean', dataPostrrmean', 1/t_overlap, t_limits(1)+1, t_limits(2));
-    
-    dataPrerrsd=tld.rr_std(pre,idx_include_rr);
-    dataPostrrsd=tld.rr_std(post,idx_include_rr);
-    disp('cluster analysis RR SD')
-    montecarlo_fornewdata_differentsizes(dataPrerrsd', dataPostrrsd', 1/t_overlap, t_limits(1)+1, t_limits(2));
+   run_cluster_analysis(tld, t_overlap, t_limits);
 end
+tld = rmfield(tld, 'hr');
+tld = rmfield(tld, 'sats');
+tld = rmfield(tld, 'rr');
+
+save(sprintf('%s/tld_%s.mat',plot_dir,dataset_label), "tld")
 
 % find responders
-%find_responders(tld, std_threshold)
-
 if 1
-    [signals, colors, all_colors,signal_increase,signal_decrease,tld.pre_post_hb,all_colors_names] = find_responders(tld, std_threshold, 6,plot_subject_specific); %deleted additional argument: , 0
+    
+    % tld = concatenate_tld(tld, tld);
+    
+    [signals, colors, all_colors, signal_increase, signal_decrease,  all_colors_names] = find_responders(tld, std_threshold, 6, plot_subject_specific); 
     
     %find subject labels for Oxford data
     if strcmp(dataset_label, 'Oxford')
-        all_unique_patid = unique(subjectid);
-        patient_ids_integer = str2num(subjectid(:,end-1:end));
-%         end
+        all_unique_patid = unique(tld.subjectid);
+        patient_ids_integer = str2num(tld.subjectid(:,end-1:end));
+
     end
 
     if strcmp(dataset_label, 'Imperial')
-        all_unique_patid=unique(subjectid);
-        patient_ids_integer = 1 : numel(subjectid);
-%         for s = 1 : numel(subjectid)
-%             patient_ids_integer(s)=s; % str2num(subjectid{s}(3 : end));
-%         end
+        all_unique_patid=unique(tld.subjectid);
+        patient_ids_integer = 1 : numel(tld.subjectid);
     end
-    
     
     if strcmp(dataset_label, 'Stockholm')
         % Convert the list of hex IDs to integer ids
         
-        all_unique_patid = unique(patient_ids);
-        subjectid = patient_ids;
-        patient_ids_integer = zeros(size(patient_ids,1),1);
+        all_unique_patid = unique(tld.subjectid);
+        patient_ids_integer = zeros(size(tld.subjectid,1),1);
         for ipat = 1:size(all_unique_patid,1)
-            patient_ids_integer(find(contains(patient_ids, all_unique_patid{ipat}))) = ipat;
+            patient_ids_integer(find(contains(tld.subjectid, all_unique_patid{ipat}))) = ipat;
         end
         
-        print_dataset_description(tld, patient_ids, signals, dataset_label)
+        print_dataset_description(tld, signals, dataset_label)
     end
     
     % Average lines per response patient groups
-    for isig =1:numel(var_labels)
+    for isig = 1:numel(var_labels)
         fig = figure;
         
         % Good quality recordings
-        idx_good_quality = sig_quality(isig, :) == 1;
+        idx_good_quality = tld.sig_quality(isig, :) == 1;
         if strcmp(dataset_label, 'Oxford') || strcmp(dataset_label, 'Stockholm') || strcmp(dataset_label, 'Imperial')
             % Count unique patients with good quality recordings of the VS
             npatsig = size(unique(patient_ids_integer(idx_good_quality)), 1);
@@ -452,15 +370,15 @@ if 1
             patid_included = patient_ids_integer(idx_good_quality);
             [~, idx] = unique(patid_included);
             unique_patid_sig_hb = patid_included(idx);
-    
+            
             fprintf('\n\nVariable=%s, n-patients=%d, n-evt=%d, n-fullHB=%d\n', ...
                     var_labels{isig}, npatsig, sum(idx_good_quality), size(full_hb,2));
-    
+            
             print_demographics(tld.BIRTH_weight(unique_patid_sig_hb), tld.BIRTH_Gender(unique_patid_sig_hb), tld.PMA(unique_patid_sig_hb))
-    
+        
         end
         % for each types of responses, excluding the "green" for readability (both
-        % increase and decrease) 
+        % increase and decrease)
         for icolor = 1:size(all_colors,2)
             
             idx_sigcolor = (idx_good_quality) & (colors(isig,:)==icolor);
@@ -474,8 +392,8 @@ if 1
                 [~, idx] = unique(patid_included);
                 unique_patid_sigcolor = patid_included(idx);
                 
-                npatsigcolor = size(idx,1);
-
+                npatsigcolor = size(idx, 1);
+                
                 displayname = sprintf(displayname, sum(idx_sigcolor), npatsigcolor);
             end
             fprintf('\tcolor=%s\n%s\n', all_colors_names{icolor}, displayname);
@@ -491,15 +409,16 @@ if 1
                 displayname = sprintf(displayname, sum(idx_sigcolor), npatsigcolor );
 
             end
-                %fprintf('color=%s\n%s\n', all_colors_names{icolor},
-                %displayname); @Caroline
-                fprintf('color=%s\n%s\n', all_colors{icolor}, displayname);
-                
-                % set(findall(0, 'type', 'axes'), 'FontName', 'Times', 'Fontsize', 16, 'TickDir', 'out', 'box', 'off', 'linewidth', 2, 'ticklength', [0.01, 0.01])
+            %fprintf('color=%s\n%s\n', all_colors_names{icolor},
+            %displayname); @Caroline
+            fprintf('color=%s\n%s\n', all_colors{icolor}, displayname);
+            
+            % set(findall(0, 'type', 'axes'), 'FontName', 'Times', 'Fontsize', 16, 'TickDir', 'out', 'box', 'off', 'linewidth', 2, 'ticklength', [0.01, 0.01])
            
                 
-               print_demographics(tld.BIRTH_weight(unique_patid_sigcolor),tld.BIRTH_Gender(unique_patid_sigcolor),tld.PMA(unique_patid_sigcolor))
-            if ~strcmp(all_colors{icolor},'green')
+           print_demographics(tld.BIRTH_weight(unique_patid_sigcolor),tld.BIRTH_Gender(unique_patid_sigcolor),tld.PMA(unique_patid_sigcolor))
+            
+           if ~strcmp(all_colors{icolor},'green')
                 data_sigcolor = squeeze(signals(isig, idx_sigcolor,:));
                 if size(data_sigcolor, 2)==1 %this happens if only 1 transfusion in group
                     data_sigcolor=data_sigcolor';
@@ -605,7 +524,8 @@ if 1
     
 
 %     %plot barcharts for type of responses
-    fig = figure;
+fig = figure;
+
 for isig = 1:numel(var_labels)
     % Counts
     both = sum(colors(isig,:) == 1);  % Ignored

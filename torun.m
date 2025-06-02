@@ -6,9 +6,6 @@
 %     load_monitor_data(files(i).name, d, d)
 % end
 
-clear all
-
-
 %% find data - must run this section first
 % define_subjects_Oxford
 
@@ -34,7 +31,6 @@ if contains(name, 'Mac')
     dataset_label = 'Imperial';
 end
 
-
 %% plot average and find responders and non-responders
 
 if exist(fullfile(pwd, 'functions'), 'dir')
@@ -56,7 +52,6 @@ if contains(name, 'Mac')
 else
     preprocessed_data_folder = '../preprocessed';
 end
-
 
 if ~exist(preprocessed_data_folder, 'dir')
     error('check if "preprocessed"-folder is part of the current folder')
@@ -108,8 +103,8 @@ for ianalysis = 1:3
         define_subjects_Imperial
     end
 
-    [signals, responders,signal_increase,signal_decrease,var_labels,subjectid,studyid,sig_quality,tld] = plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, check_sig, dataset_label, std_threshold, plot_dir, sig_quality_fname, transfusion_rawdata_fname);
-
+    [signals, responders,signal_increase,signal_decrease,var_labels,tld] = plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, check_sig, dataset_label, std_threshold, plot_dir, sig_quality_fname, transfusion_rawdata_fname);
+    
     %% Create table of results and save as excel files
     increase_responder=zeros(size(responders));
     decrease_responder=zeros(size(responders));
@@ -120,7 +115,7 @@ for ianalysis = 1:3
     
     % Create one table for each variable of interest
     for v=1:length(var_labels)
-        T=table(subjectid, studyid, tld.pre_post_hb(1,:)',tld.pre_post_hb(2,:)',tld.TESTOD_CurrentVentilation',tld.TESTOD_MostRecentWeight', tld.PMA',tld.evt_start_pna_days', tld.BIRTH_Gender',increase_responder(v,:)',decrease_responder(v,:)',signal_increase(v,:)',signal_decrease(v,:)', ...
+        T=table(tld.subjectid, tld.studyid, tld.pre_post_hb(1,:)',tld.pre_post_hb(2,:)',tld.TESTOD_CurrentVentilation',tld.TESTOD_MostRecentWeight', tld.PMA',tld.evt_start_pna_days', tld.BIRTH_Gender',increase_responder(v,:)',decrease_responder(v,:)',signal_increase(v,:)',signal_decrease(v,:)', ...
             'VariableNames',{'Subject ID';'Study ID';'StartHB';'EndHB';'TESTOD_CurrentVentilation'; 'TESTOD_MostRecentWeight';'PMA';'PNA';'BIRTH_Gender';'Increase Response';'Decrease Response';'Average Signal Increase';'Average Signal Decrease'});
         excel_fname = strcat(plot_dir,'/tables/', var_labels(v), sprintf('_%s.xlsx',dataset_label));
         writetable(T, cell2mat(excel_fname));
