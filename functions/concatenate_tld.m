@@ -1,4 +1,32 @@
 function tld3 = concatenate_tld(tld1, tld2)
+    if ~isfield(tld2,'subjectid')
+        tld2.subjectid = num2cell( (1:(tld2.counter-1))');
+    end
+    if ~isfield(tld2,'studyid')
+        tld2.studyid = (1:(tld2.counter-1))';
+    end
+    if ~isfield(tld2,'good_rate_volume')
+        tld2.good_rate_volume = ones(1,tld2.counter-1)>0;
+    end
+    if ~isfield(tld2,'BIRTH_Gender')
+        tld2.BIRTH_Gender = cell(1,tld2.counter-1);
+        tld2.BIRTH_Gender(:) = {'-'};
+    end
+    if ~isfield(tld2,'TESTOD_CurrentVentilation')
+        tld2.TESTOD_CurrentVentilation = cell(1,tld2.counter-1);
+        tld2.TESTOD_CurrentVentilation(:) = {'Standby'};
+    end
+    
+    % Get field names
+    fields_a = fieldnames(tld1);
+    fields_b = fieldnames(tld2);
+    
+    % Find fields in `a` that are not in `b`
+    missing_in_b = setdiff(fields_a, fields_b);
+    for ifield = 1:size(missing_in_b, 1)
+        tld2.(missing_in_b{ifield}) = nan(size(tld1.(missing_in_b{ifield}),1),tld2.counter-1);
+    end
+
     tld3 = struct;
     
     tld3.sig_quality = [tld1.sig_quality, tld2.sig_quality];

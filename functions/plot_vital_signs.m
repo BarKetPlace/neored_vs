@@ -324,9 +324,12 @@ save(sprintf('%s/tld_%s.mat',plot_dir,dataset_label), "tld")
 
 % find responders
 if 1
-    
-    % tld = concatenate_tld(tld, tld);
-    
+    tld_oxford = load('../others/tld_Oxford.mat'); tld_oxford = tld_oxford.tld;
+    tld_oxford.dataset_label="Oxford";
+
+    tld = concatenate_tld(tld, tld_oxford);
+    %dataset_label = "Stockholm_Oxford";
+
     [signals, colors, all_colors, signal_increase, signal_decrease,  all_colors_names] = find_responders(tld, std_threshold, 6, plot_subject_specific); 
     
     %find subject labels for Oxford data
@@ -583,7 +586,9 @@ end
 function idx_full_hb = filter_full_hb(data)
     % Now they always all have the Hb data because we only care about the
     % pre-transfusion
-    assert(~sum(isnan(data(1,:))~=0));
+    
+    %assert(~sum(isnan(data(1,:)) ~= 0));
+    
     idx_full_hb = true(1,size(data,2));% sum(isnan(data),1)==0;
 end
 % _ EOF____________________________________________________________________

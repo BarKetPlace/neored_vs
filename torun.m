@@ -57,7 +57,7 @@ if ~exist(preprocessed_data_folder, 'dir')
     error('check if "preprocessed"-folder is part of the current folder')
 end
 
-sig_quality_fname = sprintf('%s/sig_quality_%s.mat',preprocessed_data_folder, dataset_label);
+sig_quality_fname = sprintf('%s/sig_quality_%s.mat', preprocessed_data_folder, dataset_label);
 transfusion_rawdata_fname = strcat(preprocessed_data_folder,'/rawtransfusiondata.mat');
 
 %%  Run analysis with several cutoffs on the age at event start.
@@ -70,17 +70,17 @@ for ianalysis = 1:3
     if ianalysis==1 % events below 2w only
         evt_start_days_upper = 1000000000;
         evt_start_days_lower = 0;
-        plot_dir = '../results';
-
+        plot_dir = '../results_Stockholm_and_Oxford';
+        
     elseif ianalysis==2 % events above 2w only
         evt_start_days_upper = 1000000000;
         evt_start_days_lower = 2*7;
-        plot_dir = '../results_above_2w';
+        plot_dir = '../results_Stockholm_and_Oxford_above_2w';
     
     elseif ianalysis==3 % events above 2w only
         evt_start_days_upper = 2*7;
         evt_start_days_lower = 0;
-        plot_dir = '../results_below_2w';
+        plot_dir = '../results_Stockholm_and_Oxford_below_2w';
     
     end
     
