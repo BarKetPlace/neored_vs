@@ -61,26 +61,26 @@ sig_quality_fname = sprintf('%s/sig_quality_%s.mat', preprocessed_data_folder, d
 transfusion_rawdata_fname = strcat(preprocessed_data_folder,'/rawtransfusiondata.mat');
 
 %%  Run analysis with several cutoffs on the age at event start.
-for ianalysis = 1:3
+for ianalysis = 1:1.
     % Remove cache 
     delete(sig_quality_fname)
     delete(transfusion_rawdata_fname)
 
     % Choice of cutoff & output directory
-    if ianalysis==1 % events below 2w only
+    if ianalysis==1 % all events
         evt_start_days_upper = 1000000000;
         evt_start_days_lower = 0;
-        plot_dir = '../results_Stockholm_and_Oxford';
+        plot_dir = '../results_Stockholm_Oxford_Imperial';
         
     elseif ianalysis==2 % events above 2w only
         evt_start_days_upper = 1000000000;
         evt_start_days_lower = 2*7;
-        plot_dir = '../results_Stockholm_and_Oxford_above_2w';
+        plot_dir = '../results_Stockholm_Oxford_Imperial_above_2w';
     
     elseif ianalysis==3 % events above 2w only
         evt_start_days_upper = 2*7;
         evt_start_days_lower = 0;
-        plot_dir = '../results_Stockholm_and_Oxford_below_2w';
+        plot_dir = '../results_Stockholm_Oxford_Imperial_below_2w';
     
     end
     

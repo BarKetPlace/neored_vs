@@ -38,8 +38,15 @@ n_evts = tld.counter-1;
 
 colors = zeros(numel(var_labels), n_evts);
 signals = zeros(numel(var_labels), n_evts, T);
+signals(:)=NaN;
 signal_increase = zeros(numel(var_labels), n_evts);
 signal_decrease = zeros(numel(var_labels), n_evts);
+
+
+% all_colors = {'green','red','blue','black'};
+%all_colors = {'green',[0.99, 0.99, 0.59],[0.65, 0.77, 0.90],[1, 0.41, 0.38]};
+all_colors = {'green',[0.99, 150/255, 0],[0.65, 0.77, 0.90],[1, 0.41, 0.38]};
+all_colors_names = {'Both', 'Increase', 'Decrease', 'Stable'};
 
 
 for v = 1 : numel(var_labels)
@@ -53,9 +60,6 @@ for v = 1 : numel(var_labels)
         % check signal quality
         if tld.sig_quality(v, r) == 0; colors(v,r)=NaN; signal_increase(v,r)=NaN; signal_decrease(v,r)=NaN; continue; end
 
-
-
-        
         % find if the post-transfusion signal exceeded the std threshold
         idx_exceed = (find(abs(tld.(var_labels{v})(idx_post, r)) > std_pre(r) .* std_threshold))';
         idx_consecutive = diff(idx_exceed) == 1;
@@ -88,10 +92,6 @@ for v = 1 : numel(var_labels)
         else
             color = 4;%'red';%[1, 0.41, 0.38];%red
         end
-        % all_colors = {'green','red','blue','black'};
-        %all_colors = {'green',[0.99, 0.99, 0.59],[0.65, 0.77, 0.90],[1, 0.41, 0.38]};
-        all_colors = {'green',[0.99, 150/255, 0],[0.65, 0.77, 0.90],[1, 0.41, 0.38]};
-        all_colors_names = {'Both', 'Increase', 'Decrease', 'Stable'};
         
         % Save data in tensors that are returned
         colors(v,r) = color;

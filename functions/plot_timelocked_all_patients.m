@@ -1,4 +1,7 @@
 function plot_timelocked_all_patients(tld,t_baseline,t_limits, var_labels,y_names,plot_dir,dataset_label)
+
+    dataset_label = tld.dataset_label;
+
     % plot mean response over all transfusions
     fig = figure;
     po = get(gcf, 'position');
@@ -13,13 +16,12 @@ function plot_timelocked_all_patients(tld,t_baseline,t_limits, var_labels,y_name
         % mean subtract the moving average to mean of t_baseline
         idx_baseline = tld.t_average > t_baseline(1) & tld.t_average < t_baseline(2);
         tld.(var_labels{v}) = tld.(var_labels{v}) - mean(tld.(var_labels{v})(idx_baseline, :), 'omitnan');
-    
-    
+        
         % plot mean and standard deviations
         subplot(2, numel(y_names) / 2, v);
-    
+        
         idx_include = find(sig_quality(v, :));
-    
+        
         m = mean(tld.(var_labels{v})(:, idx_include), 2, 'omitnan');
         s = std(tld.(var_labels{v})(:, idx_include), [], 2, 'omitnan');
         plot(tld.t_average, m, 'Color', [0.5, 0.5, 0.5], 'LineWidth', 2);
@@ -44,7 +46,7 @@ function plot_timelocked_all_patients(tld,t_baseline,t_limits, var_labels,y_name
         xlabel('Time [hours]');
         ylabel(y_names{v});
         xlim([tld.t_average([1, end])])
-        ylim([min(m - s), max(m + s)])
+        ylim([ymin, ymax])
     end
     figure(fig);
     orient(fig, 'landscape');

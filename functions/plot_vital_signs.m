@@ -308,8 +308,6 @@ save(sprintf('%s/time_events_%s.mat',plot_dir,dataset_label), 'time_events');
 
 y_names = {'Mean HR [bpm]', 'Mean Sats [%]', 'Mean RR [breaths/min]', 'Std HR [bpm]', 'Std Sats [%]', 'Std RR [breaths/min]'};
 
-plot_timelocked_all_patients(tld, t_baseline, t_limits, var_labels, y_names, plot_dir,dataset_label);
-
 
 %Cluster analysis
 cluster_analysis = false;
@@ -324,11 +322,25 @@ save(sprintf('%s/tld_%s.mat',plot_dir,dataset_label), "tld")
 
 % find responders
 if 1
-    tld_oxford = load('../others/tld_Oxford.mat'); tld_oxford = tld_oxford.tld;
-    tld_oxford.dataset_label="Oxford";
-
-    tld = concatenate_tld(tld, tld_oxford);
+    plot_timelocked_all_patients(tld, t_baseline, t_limits, var_labels, y_names, plot_dir);
+    if false
+        tld_oxford = load('../others/tld_Oxford.mat'); 
+        tld_oxford = tld_oxford.tld;
+        tld_oxford.dataset_label="Oxford";
+        plot_timelocked_all_patients(tld_oxford, t_baseline, t_limits, var_labels, y_names, plot_dir);
+    
+        tld_Imperial = load('../others/tld_Imperial.mat'); 
+        tld_Imperial = tld_Imperial.tld;
+        tld_Imperial.dataset_label="Imperial";
+        plot_timelocked_all_patients(tld_Imperial, t_baseline, t_limits, var_labels, y_names, plot_dir);
+    
+        %tld = tld_Imperial;
+        tld = concatenate_tld(tld, tld_oxford);
+        tld = concatenate_tld(tld, tld_Imperial);
+    end
     %dataset_label = "Stockholm_Oxford";
+
+    %plot_timelocked_all_patients(tld, t_baseline, t_limits, var_labels, y_names, plot_dir, dataset_label);
 
     [signals, colors, all_colors, signal_increase, signal_decrease,  all_colors_names] = find_responders(tld, std_threshold, 6, plot_subject_specific); 
     
@@ -417,7 +429,6 @@ if 1
             fprintf('color=%s\n%s\n', all_colors{icolor}, displayname);
             
             % set(findall(0, 'type', 'axes'), 'FontName', 'Times', 'Fontsize', 16, 'TickDir', 'out', 'box', 'off', 'linewidth', 2, 'ticklength', [0.01, 0.01])
-           
                 
            print_demographics(tld.BIRTH_weight(unique_patid_sigcolor),tld.BIRTH_Gender(unique_patid_sigcolor),tld.PMA(unique_patid_sigcolor))
             
@@ -443,7 +454,6 @@ if 1
                 hold on
                 %%% plot([mean(tld.t_stop(idx_include), 'omitnan'), mean(tld.t_stop(idx_include), 'omitnan')], [min(m - s), max(m + s)], 'k--', 'LineWidth', 2);
             
-
             end
         end
         legend('NumColumns', 3, 'Location', 'northoutside');

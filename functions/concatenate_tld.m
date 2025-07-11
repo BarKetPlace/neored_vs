@@ -14,7 +14,10 @@ function tld3 = concatenate_tld(tld1, tld2)
     end
     if ~isfield(tld2,'TESTOD_CurrentVentilation')
         tld2.TESTOD_CurrentVentilation = cell(1,tld2.counter-1);
-        tld2.TESTOD_CurrentVentilation(:) = {'Standby'};
+        tld2.TESTOD_CurrentVentilation(:) = {'NaN'};
+    end
+    if isnumeric(tld2.TESTOD_CurrentVentilation{1,1})
+        tld2.TESTOD_CurrentVentilation =  arrayfun(@(x) num2str(x{1,1}), tld2.TESTOD_CurrentVentilation, 'UniformOutput', false);
     end
     
     % Get field names
@@ -60,17 +63,23 @@ function tld3 = concatenate_tld(tld1, tld2)
     tld3.rr_std = [tld1.rr_std, tld2.rr_std];
     tld3.good_rate_volume = [tld1.good_rate_volume, tld2.good_rate_volume];
     assert(all(tld1.t_average == tld2.t_average));
-    
-    
     tld3.t_average = tld1.t_average;
+
+    tld3.t_stop = [tld1.t_stop;tld2.t_stop];
+
+
     tld3.counter = tld1.counter + tld2.counter -1;
     
     tld1.subjectid = strcat(strcat(tld1.dataset_label,'_'),tld1.subjectid);
     tld2.subjectid = strcat(strcat(tld2.dataset_label,'_'),tld2.subjectid);
     tld3.subjectid = cat(1,tld1.subjectid,tld2.subjectid);
+    if isnumeric(tld1.studyid)
+        tld1.studyid = arrayfun(@(x) num2str(x), tld1.studyid, 'UniformOutput', false);
+    end
 
-    tld1.studyid = arrayfun(@(x) num2str(x), tld1.studyid, 'UniformOutput', false);
-    tld2.studyid = arrayfun(@(x) num2str(x), tld2.studyid, 'UniformOutput', false);
+    if isnumeric(tld2.studyid)
+        tld2.studyid = arrayfun(@(x) num2str(x), tld2.studyid, 'UniformOutput', false);
+    end
     tld3.studyid = cat(1,tld1.studyid,tld2.studyid);
 
     tld3.dataset_label = sprintf('%s+%s',tld1.dataset_label,tld2.dataset_label);
