@@ -1,4 +1,4 @@
-function print_dataset_description(tld, signals_, dataset_label)
+function print_dataset_description(tld, signals_, dataset_label, plot_dir)
     % Get the index of only one patient ID
     patient_ids_ = tld.subjectid;
 
@@ -47,7 +47,7 @@ function print_dataset_description(tld, signals_, dataset_label)
   
     fig=figure; plot(vol./weights, rates./weights, '.', 'MarkerSize',10)
     xlabel('Dose (ml/kg)'); ylabel('Rates (ml/h/kg)')
-    exportgraphics(fig, sprintf('../results/%s_rates_vs_dose.jpg', dataset_label), 'BackgroundColor', 'none','Resolution',300);
+    exportgraphics(fig, sprintf('%s/%s_rates_vs_dose.jpg',plot_dir, dataset_label), 'BackgroundColor', 'none','Resolution',300);
     
     transfusion_counts_str = data_description(count_transfusions', '[n-evts] per patients');
     

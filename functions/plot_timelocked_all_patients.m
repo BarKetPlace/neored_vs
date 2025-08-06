@@ -1,4 +1,4 @@
-function plot_timelocked_all_patients(tld,t_baseline,t_limits, var_labels,y_names,plot_dir,dataset_label)
+function plot_timelocked_all_patients(tld,t_limits, var_labels, y_names, plot_dir)
 
     dataset_label = tld.dataset_label;
 
@@ -13,10 +13,6 @@ function plot_timelocked_all_patients(tld,t_baseline,t_limits, var_labels,y_name
     
     for v = 1 : numel(var_labels)
     
-        % mean subtract the moving average to mean of t_baseline
-        idx_baseline = tld.t_average > t_baseline(1) & tld.t_average < t_baseline(2);
-        tld.(var_labels{v}) = tld.(var_labels{v}) - mean(tld.(var_labels{v})(idx_baseline, :), 'omitnan');
-        
         % plot mean and standard deviations
         subplot(2, numel(y_names) / 2, v);
         

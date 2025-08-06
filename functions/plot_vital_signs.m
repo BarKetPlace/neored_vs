@@ -322,17 +322,30 @@ save(sprintf('%s/tld_%s.mat',plot_dir,dataset_label), "tld")
 
 % find responders
 if 1
-    plot_timelocked_all_patients(tld, t_baseline, t_limits, var_labels, y_names, plot_dir);
+    %figure;
+    %plot(mean(tld.hr_std,2,'omitnan')); 
+    
+    tld = substract_mean_baseline(tld,t_baseline,var_labels);
+    
+    %figure;
+    %plot(mean(tld.hr_std,2,'omitnan'));
+    
+    plot_timelocked_all_patients(tld, t_limits, var_labels, y_names, plot_dir);
+    close all;
+    
     if false
         tld_oxford = load('../others/tld_Oxford.mat'); 
         tld_oxford = tld_oxford.tld;
         tld_oxford.dataset_label="Oxford";
-        plot_timelocked_all_patients(tld_oxford, t_baseline, t_limits, var_labels, y_names, plot_dir);
+        tld_oxford = substract_mean_baseline(tld_oxford, t_baseline, var_labels);
+
+        plot_timelocked_all_patients(tld_oxford, t_limits, var_labels, y_names, plot_dir);
     
         tld_Imperial = load('../others/tld_Imperial.mat'); 
         tld_Imperial = tld_Imperial.tld;
         tld_Imperial.dataset_label="Imperial";
-        plot_timelocked_all_patients(tld_Imperial, t_baseline, t_limits, var_labels, y_names, plot_dir);
+        tld_Imperial = substract_mean_baseline(tld_Imperial,t_baseline,var_labels);
+        plot_timelocked_all_patients(tld_Imperial, t_limits, var_labels, y_names, plot_dir);
     
         %tld = tld_Imperial;
         tld = concatenate_tld(tld, tld_oxford);
@@ -365,7 +378,7 @@ if 1
             patient_ids_integer(find(contains(tld.subjectid, all_unique_patid{ipat}))) = ipat;
         end
         
-        print_dataset_description(tld, signals, dataset_label)
+        print_dataset_description(tld, signals, dataset_label, plot_dir)
     end
     
     % Average lines per response patient groups

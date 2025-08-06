@@ -72,7 +72,7 @@ for v = 1 : numel(var_labels)
         gaps = find(idx_start_stop(2 : 2 : end) - idx_start_stop(1 : 2 : end - 1) >= sample_threshold);
         
         %calculate amount of signal above and below the threshold
-        cutsignalabove = tld.(var_labels{v})(idx_post, r) - (std_pre(r) .* std_threshold); %cut signal so get sum above threshold (i.e. subtracting variability in baseline)
+        cutsignalabove = tld.(var_labels{v})(idx_post, r) - (std_pre(r) .* std_threshold);  %cut signal so get sum above threshold (i.e. subtracting variability in baseline)
         signal_increase(v,r) = sum(cutsignalabove(find(cutsignalabove>0)))/length(cutsignalabove);
         
         cutsignalbelow = tld.(var_labels{v})(idx_post, r) - (-std_pre(r) .* std_threshold); 

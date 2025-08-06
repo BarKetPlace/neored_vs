@@ -61,29 +61,30 @@ sig_quality_fname = sprintf('%s/sig_quality_%s.mat', preprocessed_data_folder, d
 transfusion_rawdata_fname = strcat(preprocessed_data_folder,'/rawtransfusiondata.mat');
 
 %%  Run analysis with several cutoffs on the age at event start.
-for ianalysis = 1:1.
+for ianalysis = 1:3
     % Remove cache 
     delete(sig_quality_fname)
     delete(transfusion_rawdata_fname)
-
+    
     % Choice of cutoff & output directory
     if ianalysis==1 % all events
         evt_start_days_upper = 1000000000;
         evt_start_days_lower = 0;
-        plot_dir = '../results_Stockholm_Oxford_Imperial';
+        plot_dir = '../results_Stockholm';
         
     elseif ianalysis==2 % events above 2w only
         evt_start_days_upper = 1000000000;
         evt_start_days_lower = 2*7;
-        plot_dir = '../results_Stockholm_Oxford_Imperial_above_2w';
+        plot_dir = '../results_Stockholm_above_2w';
     
     elseif ianalysis==3 % events above 2w only
         evt_start_days_upper = 2*7;
         evt_start_days_lower = 0;
-        plot_dir = '../results_Stockholm_Oxford_Imperial_below_2w';
-    
+        plot_dir = '../results_Stockholm_below_2w';
     end
     
+    mkdir(plot_dir)
+
     %% Find the relevant data files
     if strcmp(dataset_label, 'Stockholm')
         % Uses the variables evt_start_days_upper and evt_start_days_lower
@@ -102,7 +103,7 @@ for ianalysis = 1:1.
         % Uses the variables evt_start_days_upper and evt_start_days_lower
         define_subjects_Imperial
     end
-
+    
     [signals, responders,signal_increase,signal_decrease,var_labels,tld] = plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, check_sig, dataset_label, std_threshold, plot_dir, sig_quality_fname, transfusion_rawdata_fname);
     
     %% Create table of results and save as excel files
@@ -118,6 +119,7 @@ for ianalysis = 1:1.
         T=table(tld.subjectid, tld.studyid, tld.pre_post_hb(1,:)',tld.pre_post_hb(2,:)',tld.TESTOD_CurrentVentilation',tld.TESTOD_MostRecentWeight', tld.PMA',tld.evt_start_pna_days', tld.BIRTH_Gender',increase_responder(v,:)',decrease_responder(v,:)',signal_increase(v,:)',signal_decrease(v,:)', ...
             'VariableNames',{'Subject ID';'Study ID';'StartHB';'EndHB';'TESTOD_CurrentVentilation'; 'TESTOD_MostRecentWeight';'PMA';'PNA';'BIRTH_Gender';'Increase Response';'Decrease Response';'Average Signal Increase';'Average Signal Decrease'});
         excel_fname = strcat(plot_dir,'/tables/', var_labels(v), sprintf('_%s.xlsx',dataset_label));
+        mkdir(strcat(plot_dir,'/tables/'))
         writetable(T, cell2mat(excel_fname));
     end
     
