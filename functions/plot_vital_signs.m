@@ -1,5 +1,5 @@
 function [signals, colors,signal_increase,signal_decrease,var_labels,tld]=plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, sig_check, dataset_label, std_threshold, plot_dir, ...
-    sig_quality_fname,transfusion_rawdata_fname)
+    sig_quality_fname,transfusion_rawdata_fname,evt_start_days_lower,evt_start_days_upper,load_other_centers)
 % - plot_vital_signs(files, t_window, t_overlap, sig_check, dataset_label,
 % std_threshold) -- plots the vital signs responses after time-locking to 
 % transfusion events.
@@ -332,21 +332,22 @@ if 1
     
     plot_timelocked_all_patients(tld, t_limits, var_labels, y_names, plot_dir);
     close all;
-    
-    if false
+    if load_other_centers
         tld_oxford = load('../others/tld_Oxford.mat'); 
         tld_oxford = tld_oxford.tld;
         tld_oxford.dataset_label="Oxford";
         tld_oxford = substract_mean_baseline(tld_oxford, t_baseline, var_labels);
-
         plot_timelocked_all_patients(tld_oxford, t_limits, var_labels, y_names, plot_dir);
-    
+        
+        % tld_oxford = tld_filter(tld_oxford,evt_start_days_lower, evt_start_days_upper);
+
         tld_Imperial = load('../others/tld_Imperial.mat'); 
         tld_Imperial = tld_Imperial.tld;
         tld_Imperial.dataset_label="Imperial";
         tld_Imperial = substract_mean_baseline(tld_Imperial,t_baseline,var_labels);
         plot_timelocked_all_patients(tld_Imperial, t_limits, var_labels, y_names, plot_dir);
-    
+        tld_Imperial = tld_filter(tld_Imperial,evt_start_days_lower, evt_start_days_upper);
+
         %tld = tld_Imperial;
         tld = concatenate_tld(tld, tld_oxford);
         tld = concatenate_tld(tld, tld_Imperial);

@@ -46,6 +46,8 @@ t_limits = [-12, 12]; % hours
 t_baseline = [-6, 0]; % hours
 check_sig = true;
 std_threshold = 1.0;
+load_other_centers = true;
+
 if contains(name, 'Mac')
     preprocessed_data_folder = 'cached';
     addpath(fullfile(pwd, 'cached'))
@@ -60,8 +62,13 @@ end
 sig_quality_fname = sprintf('%s/sig_quality_%s.mat', preprocessed_data_folder, dataset_label);
 transfusion_rawdata_fname = strcat(preprocessed_data_folder,'/rawtransfusiondata.mat');
 
+plot_dir_stem = 'results_Stockholm';
+if load_other_centers
+    plot_dir_stem=strcat(plot_dir_stem,'_Oxford_Imperial');
+end
+
 %%  Run analysis with several cutoffs on the age at event start.
-for ianalysis = 1:3
+for ianalysis = 3:3
     % Remove cache 
     delete(sig_quality_fname)
     delete(transfusion_rawdata_fname)
@@ -70,17 +77,17 @@ for ianalysis = 1:3
     if ianalysis==1 % all events
         evt_start_days_upper = 1000000000;
         evt_start_days_lower = 0;
-        plot_dir = '../results_Stockholm';
+        plot_dir = strcat('../',plot_dir_stem);%results_Stockholm_Oxford_Imperial';
         
     elseif ianalysis==2 % events above 2w only
         evt_start_days_upper = 1000000000;
         evt_start_days_lower = 2*7;
-        plot_dir = '../results_Stockholm_above_2w';
+        plot_dir = strcat('../',plot_dir_stem,'_above_2w');
     
-    elseif ianalysis==3 % events above 2w only
+    elseif ianalysis==3 % events below 2w only
         evt_start_days_upper = 2*7;
         evt_start_days_lower = 0;
-        plot_dir = '../results_Stockholm_below_2w';
+        plot_dir = strcat('../',plot_dir_stem,'_below_2w');
     end
     
     mkdir(plot_dir)
@@ -90,7 +97,7 @@ for ianalysis = 1:3
         % Uses the variables evt_start_days_upper and evt_start_days_lower
         define_subjects_Stockholm
     end
-        
+    
     if strcmp(dataset_label, 'Oxford')
         % Uses the variables evt_start_days_upper and evt_start_days_lower
         define_subjects_Oxford
@@ -104,7 +111,9 @@ for ianalysis = 1:3
         define_subjects_Imperial
     end
     
-    [signals, responders,signal_increase,signal_decrease,var_labels,tld] = plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, check_sig, dataset_label, std_threshold, plot_dir, sig_quality_fname, transfusion_rawdata_fname);
+    [signals, responders,signal_increase,signal_decrease,var_labels,tld] = plot_vital_signs(files, ...
+        t_limits, t_window, t_overlap, t_baseline, check_sig, dataset_label, std_threshold, plot_dir, ...
+        sig_quality_fname, transfusion_rawdata_fname,evt_start_days_lower,evt_start_days_upper,load_other_centers);
     
     %% Create table of results and save as excel files
     increase_responder=zeros(size(responders));
