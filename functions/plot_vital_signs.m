@@ -1,5 +1,5 @@
 function [signals, colors,signal_increase,signal_decrease,var_labels,tld]=plot_vital_signs(files, t_limits, t_window, t_overlap, t_baseline, sig_check, dataset_label, std_threshold, plot_dir, ...
-    sig_quality_fname,transfusion_rawdata_fname,evt_start_days_lower,evt_start_days_upper,load_other_centers)
+    sig_quality_fname,transfusion_rawdata_fname,evt_start_days_lower,evt_start_days_upper,load_other_centers,cluster_analysis)
 % - plot_vital_signs(files, t_window, t_overlap, sig_check, dataset_label,
 % std_threshold) -- plots the vital signs responses after time-locking to 
 % transfusion events.
@@ -172,7 +172,10 @@ else
         
         % time-lock data
         tld = time_lock_data(vs, tld, t_limits, t_baseline, fs);
-        tld_nocorrection = time_lock_data_nocorrection(vs, tld_nocorrection, t_limits, fs);
+
+        if any(strcmp(dataset_label, {'Oxford', 'Stockholm','Berlin'})) %for high-frequency centres also without correction to use identify_desatbradytachy
+            tld_nocorrection = time_lock_data_nocorrection(vs, tld_nocorrection, t_limits, fs);
+        end
         
         if strcmp(dataset_label, 'Oxford')
             n = length(find(contains(vs.events_vital_signs, 'transfusion') & contains(vs.events_vital_signs, 'start')));
@@ -296,21 +299,23 @@ tld.subjectid = subjectid;
 tld.studyid = studyid;
 
 % identify bradycardia, tachycardia, desats
-time_events = identify_desatbradytachy(tld_nocorrection);
-% Hr, Sats, rr
-hr_quality = tld.sig_quality(1, :);
-sats_quality = tld.sig_quality(2, :);
+if any(strcmp(dataset_label, {'Oxford', 'Stockholm','Berlin'})) %for high-frequency centres
+    time_events = identify_desatbradytachy(tld_nocorrection);
+    % Hr, Sats, rr
+    hr_quality = tld.sig_quality(1, :);
+    sats_quality = tld.sig_quality(2, :);
 
-time_events.desat = time_events.desat(sats_quality);
-time_events.tachy = time_events.tachy(hr_quality);
-time_events.brady = time_events.brady(hr_quality);
-save(sprintf('%s/time_events_%s.mat',plot_dir,dataset_label), 'time_events');
+    time_events.desat = time_events.desat(sats_quality);
+    time_events.tachy = time_events.tachy(hr_quality);
+    time_events.brady = time_events.brady(hr_quality);
+    save(sprintf('%s/time_events_%s.mat',plot_dir,dataset_label), 'time_events');
+end
 
 y_names = {'Mean HR [bpm]', 'Mean Sats [%]', 'Mean RR [breaths/min]', 'Std HR [bpm]', 'Std Sats [%]', 'Std RR [breaths/min]'};
 
 
 %Cluster analysis
-cluster_analysis = false;
+
 if cluster_analysis
    run_cluster_analysis(tld, t_overlap, t_limits);
 end
