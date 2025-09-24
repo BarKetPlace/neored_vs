@@ -32,7 +32,7 @@ for sub = 1 : numel(sub_ids)
         for f = 1 : numel(file_ids)
             vs = load(fullfile(file_ids(f).folder, file_ids(f).name));
             rates_data = get_rates_data(vs.evt_rates_dose);
-            if (vs.birthga/7 <= 32) && (vs.evt_start_days < evt_start_days_upper) && (vs.evt_start_days >= evt_start_days_lower)%&& ((vs.evt_sum_dose / vs.weight_kg_pre)>=8) && ((rates_data / vs.weight_kg_pre)>=3)
+            if (vs.birthga/7 <= 32) %&& (vs.evt_start_days < evt_start_days_upper) && (vs.evt_start_days >= evt_start_days_lower)%&& ((vs.evt_sum_dose / vs.weight_kg_pre)>=8) && ((rates_data / vs.weight_kg_pre)>=3)
                 files(file_counter, 1) = {fullfile(file_ids(f).folder, file_ids(f).name)};
                 %             files(file_counter, 2) = {fullfile(file_ids(f).folder, [file_ids(f).name(1 : strfind(file_ids(f).name, '_vital_signs_data.mat')), 'ibi.mat'])};
                 file_counter = file_counter + 1;
