@@ -1,4 +1,4 @@
-function [clusters_start_original, clusters_end_original, pvals_mass, clusters_size_original, max_clusters_size] = montecarlo_fornewdata_differentsizes(dataPre, dataPost, fs, presec, postsec)
+function [T, clusters_start_original, clusters_end_original, pvals_mass, clusters_size_original, max_clusters_size] = montecarlo_fornewdata_differentsizes(dataPre, dataPost, fs, presec, postsec)
 
 %input - dataPre - baseline data
 %       dataPost - stimulus-evoked data (same order as dataPre), for this
@@ -24,6 +24,7 @@ n2=size(dataPost,2); %time points
 tstore=zeros(n1,n2);
 for timepoint=1:n2
 for trial=1:n1
+    if ~any(~isnan(dataPre(trial,:))) && isnan(dataPost(trial,timepoint)); continue; end
     [~,~,~,stats] = ttest(dataPre(trial,:),dataPost(trial,timepoint));
     tstore(trial,timepoint) = stats.tstat;
 end
@@ -70,6 +71,7 @@ if ~isempty(clusters_start_original)
         tstore=zeros(n1,n2);
         for timepoint=1:n2
         for trial=1:n1
+            if ~any(~isnan(dataPre_shuff(trial,:))) && isnan(dataPost_shuff(trial,timepoint)); continue; end
             [~,~,~,stats] = ttest(dataPre_shuff(trial,:),dataPost_shuff(trial,timepoint));
             tstore(trial,timepoint) = stats.tstat;
         end
@@ -114,9 +116,8 @@ else
     clusters_end_original = NaN;
     clusters_size_original = NaN;
 end
-
-
-
-T = table((clusters_start_original/fs),(clusters_end_original/fs),pvals_mass);
-T.Properties.VariableNames={'Cluster_start','Cluster_end','p_value'};
-T
+T = table((clusters_start_original/fs), (clusters_end_original/fs), pvals_mass, 'VariableNames', {'Cluster_start','Cluster_end','p_value'});
+%T = table((clusters_start_original/fs),(clusters_end_original/fs),pvals_mass);
+%T.Properties.VariableNames={'Cluster_start','Cluster_end','p_value'};
+%T
+disp(T)

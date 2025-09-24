@@ -8,11 +8,25 @@ function print_demographics(BIRTH_weight,BIRTH_Gender,PMA)
         assert(size(PMA,2) == n);
         %B = regexp(BIRTH_Gender,'\S+','match');
         %T = cell2table([B{:}].');
-        counts=[0,0,0];
-        ic=1;
-        for c = ['-','M','F']
-            counts(ic) = sum(strcmp(BIRTH_Gender,c));
-            ic = ic +1;
+
+        counts = [0,0,0]; % Always 3 categories
+
+if all(cellfun(@isnumeric, BIRTH_Gender))  % Case: {0,1,0,1,...}
+    % Convert cell array to numeric vector
+    bg = cell2mat(BIRTH_Gender);
+    counts(1) = sum(bg == 0);              % female
+    counts(2) = sum(bg == 1);              % male
+    counts(3) = sum(~ismember(bg,[0 1]));  % other / invalid
+
+        elseif iscellstr(BIRTH_Gender) || isstring(BIRTH_Gender)
+            % for datasets: '-', 'M', 'F'
+            ic = 1;
+            for c = {'-','M','F'}
+                counts(ic) = sum(strcmp(BIRTH_Gender, c));
+                ic = ic + 1;
+            end
+        else
+            error('BIRTH_Gender has unexpected type');
         end
     
         %BIRTH_Gender_table = groupsummary(T,'Var1');

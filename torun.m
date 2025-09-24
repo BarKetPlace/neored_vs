@@ -18,6 +18,8 @@ close all
 
 % Default
 dataset_label = 'Oxford';
+load_other_centers = true;
+cluster_analysis = true;
 
 [ret, name] = system('hostname');
 name = strip(name);
@@ -29,6 +31,7 @@ end
 if contains(name, 'Mac')
     addpath('lib/palm/palm-alpha119/')
     dataset_label = 'Imperial';
+    load_other_centers = false;
 end
 
 %% plot average and find responders and non-responders
@@ -46,7 +49,7 @@ t_limits = [-12, 12]; % hours
 t_baseline = [-6, 0]; % hours
 check_sig = true;
 std_threshold = 1.0;
-load_other_centers = true;
+
 
 if contains(name, 'Mac')
     preprocessed_data_folder = 'cached';
@@ -113,7 +116,7 @@ for ianalysis = 3:3
     
     [signals, responders,signal_increase,signal_decrease,var_labels,tld] = plot_vital_signs(files, ...
         t_limits, t_window, t_overlap, t_baseline, check_sig, dataset_label, std_threshold, plot_dir, ...
-        sig_quality_fname, transfusion_rawdata_fname,evt_start_days_lower,evt_start_days_upper,load_other_centers);
+        sig_quality_fname, transfusion_rawdata_fname,evt_start_days_lower,evt_start_days_upper,load_other_centers,cluster_analysis);
     
     %% Create table of results and save as excel files
     increase_responder=zeros(size(responders));
