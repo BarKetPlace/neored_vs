@@ -332,14 +332,21 @@ if 1
     
     plot_timelocked_all_patients(tld, t_limits, var_labels, y_names, plot_dir);
     close all;
+    tld = tld_filter(tld,evt_start_days_lower, evt_start_days_upper);
+
     if load_other_centers
         tld_oxford = load('../others/tld_Oxford.mat'); 
         tld_oxford = tld_oxford.tld;
+
         tld_oxford.dataset_label="Oxford";
+        % I don't have the exact PNA for oxford: all the babies are >14
+        % days, assume 15
+        tld_oxford.evt_start_pna_days = 15*ones(1,tld_oxford.counter-1);
+
         tld_oxford = substract_mean_baseline(tld_oxford, t_baseline, var_labels);
         plot_timelocked_all_patients(tld_oxford, t_limits, var_labels, y_names, plot_dir);
         
-        % tld_oxford = tld_filter(tld_oxford,evt_start_days_lower, evt_start_days_upper);
+        tld_oxford = tld_filter(tld_oxford, evt_start_days_lower, evt_start_days_upper);
 
         tld_Imperial = load('../others/tld_Imperial.mat'); 
         tld_Imperial = tld_Imperial.tld;
@@ -352,9 +359,6 @@ if 1
         tld = concatenate_tld(tld, tld_oxford);
         tld = concatenate_tld(tld, tld_Imperial);
     end
-    %dataset_label = "Stockholm_Oxford";
-
-    %plot_timelocked_all_patients(tld, t_baseline, t_limits, var_labels, y_names, plot_dir, dataset_label);
 
     [signals, colors, all_colors, signal_increase, signal_decrease,  all_colors_names] = find_responders(tld, std_threshold, 6, plot_subject_specific); 
     
@@ -379,7 +383,7 @@ if 1
             patient_ids_integer(find(contains(tld.subjectid, all_unique_patid{ipat}))) = ipat;
         end
         
-        print_dataset_description(tld, signals, dataset_label, plot_dir)
+        %print_dataset_description(tld, signals, dataset_label, plot_dir)
     end
     
     % Average lines per response patient groups
@@ -399,11 +403,11 @@ if 1
             patid_included = patient_ids_integer(idx_good_quality);
             [~, idx] = unique(patid_included);
             unique_patid_sig_hb = patid_included(idx);
-            
-            fprintf('\n\nVariable=%s, n-patients=%d, n-evt=%d, n-fullHB=%d\n', ...
+            fprintf('===============================\n\n');
+            fprintf('Variable=%s, n-patients=%d, n-evt=%d, n-fullHB=%d\n', ...
                     var_labels{isig}, npatsig, sum(idx_good_quality), size(full_hb,2));
             
-            print_demographics(tld.BIRTH_weight(unique_patid_sig_hb), tld.BIRTH_Gender(unique_patid_sig_hb), tld.PMA(unique_patid_sig_hb))
+            %print_demographics(tld.BIRTH_weight(unique_patid_sig_hb), tld.BIRTH_Gender(unique_patid_sig_hb), tld.PMA(unique_patid_sig_hb))
         
         end
         % for each types of responses, excluding the "green" for readability (both
@@ -425,7 +429,7 @@ if 1
                 
                 displayname = sprintf(displayname, sum(idx_sigcolor), npatsigcolor);
             end
-            fprintf('\tcolor=%s\n%s\n', all_colors_names{icolor}, displayname);
+            % fprintf('\tcolor=%s\n\t%s\n', all_colors_names{icolor}, displayname);
             
             if strcmp(dataset_label, 'Imperial')
                 patid_included = patient_ids_integer(idx_sigcolor);    
@@ -440,11 +444,11 @@ if 1
             end
             %fprintf('color=%s\n%s\n', all_colors_names{icolor},
             %displayname); @Caroline
-            fprintf('color=%s\n%s\n', all_colors{icolor}, displayname);
+            %fprintf('color=%s\n%s\n', all_colors{icolor}, displayname);
             
             % set(findall(0, 'type', 'axes'), 'FontName', 'Times', 'Fontsize', 16, 'TickDir', 'out', 'box', 'off', 'linewidth', 2, 'ticklength', [0.01, 0.01])
                 
-           print_demographics(tld.BIRTH_weight(unique_patid_sigcolor),tld.BIRTH_Gender(unique_patid_sigcolor),tld.PMA(unique_patid_sigcolor))
+           %print_demographics(tld.BIRTH_weight(unique_patid_sigcolor),tld.BIRTH_Gender(unique_patid_sigcolor),tld.PMA(unique_patid_sigcolor))
             
            if ~strcmp(all_colors{icolor},'green')
                 data_sigcolor = squeeze(signals(isig, idx_sigcolor,:));
@@ -498,9 +502,9 @@ if 1
         set(gcf,'Units','normalized','OuterPosition',[0 0 0.25 0.3]);
 
         % Save
-        exportgraphics(fig, sprintf('%s/%s_all_patients_%s.jpg', plot_dir, sprintf(var_labels{isig}), dataset_label), 'BackgroundColor', 'None', 'Resolution', 300);
+        exportgraphics(fig, sprintf('%s/%s_vs_time_to_event.jpg', plot_dir, sprintf(var_labels{isig})), 'BackgroundColor', 'None', 'Resolution', 300);
         %print(sprintf('../results/%s_all_patients_%s.jpg',sprintf(var_labels{isig}),dataset_label), '-djpg','-bestfit');
-        savefig(fig,sprintf('%s/%s_all_patients_%s.fig',plot_dir, sprintf(var_labels{isig}), dataset_label) )
+        savefig(fig,sprintf('%s/%s_vs_time_to_event.fig',plot_dir, sprintf(var_labels{isig})) )
 
     end
     
@@ -544,10 +548,10 @@ if 1
     set(gcf,'Units','normalized','OuterPosition',[0 0 0.5 0.3]);
 
 
-    exportgraphics(gcf, sprintf('%s/piechart_all_patients_%s.jpg', plot_dir,dataset_label), 'BackgroundColor', 'none','Resolution',300);
+    exportgraphics(gcf, sprintf('%s/piechart_all_variables.jpg', plot_dir), 'BackgroundColor', 'none','Resolution',300);
 
     % save
-    print(sprintf('%s/piechart_all_patients_%s.pdf', plot_dir, dataset_label),'-dpdf','-bestfit')
+    print(sprintf('%s/piechart_all_variables.pdf', plot_dir),'-dpdf','-bestfit')
     
 
 %     %plot barcharts for type of responses
@@ -566,7 +570,7 @@ for isig = 1:numel(var_labels)
     percentages = 100 * values / tot_num;
 
     % Plot stacked bar
-    subplot(ceil(numel(var_labels)/3), 3, isig)
+    subplot(ceil(numel(varp_labels)/3), 3, isig)
     b = bar(1, percentages, 'stacked');
 
     % Set consistent colors
@@ -601,7 +605,7 @@ set(gcf, 'Units', 'normalized', 'OuterPosition', [0 0 0.5 0.5]);
 exportgraphics(gcf, sprintf('%s/barplot_all_patients_%s.jpg', plot_dir, dataset_label), ...
     'BackgroundColor', 'none', 'Resolution', 300);
 
-print(sprintf('%s/barplot_all_patients_%s.pdf', plot_dir, dataset_label), '-dpdf', '-bestfit');
+print(sprintf('%s/barplot_all_variables.pdf', plot_dir), '-dpdf', '-bestfit');
 
 end
 
