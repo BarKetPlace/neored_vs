@@ -317,7 +317,7 @@ y_names = {'Mean HR [bpm]', 'Mean Sats [%]', 'Mean RR [breaths/min]', 'Std HR [b
 %Cluster analysis
 
 if cluster_analysis
-   run_cluster_analysis(tld, t_overlap, t_limits);
+   run_cluster_analysis(tld, t_overlap, t_limits, plot_dir, dataset_label);
 end
 tld = rmfield(tld, 'hr');
 tld = rmfield(tld, 'sats');
@@ -351,7 +351,7 @@ if 1
         tld_oxford = substract_mean_baseline(tld_oxford, t_baseline, var_labels);
         plot_timelocked_all_patients(tld_oxford, t_limits, var_labels, y_names, plot_dir);
         
-        tld_oxford = tld_filter(tld_oxford, evt_start_days_lower, evt_start_days_upper);
+        % tld_oxford = tld_filter(tld_oxford,evt_start_days_lower, evt_start_days_upper);
 
         tld_Imperial = load('../others/tld_Imperial.mat'); 
         tld_Imperial = tld_Imperial.tld;
@@ -391,6 +391,10 @@ if 1
         %print_dataset_description(tld, signals, dataset_label, plot_dir)
     end
     
+ % preallocate for across variable numbers on included patients
+nUniqueSubjects = zeros(length(var_labels),1);
+nUniqueStudies  = zeros(length(var_labels),1);
+
     % Average lines per response patient groups
     for isig = 1:numel(var_labels)
         fig = figure;
@@ -412,7 +416,7 @@ if 1
             fprintf('Variable=%s, n-patients=%d, n-evt=%d, n-fullHB=%d\n', ...
                     var_labels{isig}, npatsig, sum(idx_good_quality), size(full_hb,2));
             
-            %print_demographics(tld.BIRTH_weight(unique_patid_sig_hb), tld.BIRTH_Gender(unique_patid_sig_hb), tld.PMA(unique_patid_sig_hb))
+            print_demographics(tld.BIRTH_weight(unique_patid_sig_hb), tld.BIRTH_Gender(unique_patid_sig_hb), tld.PMA(unique_patid_sig_hb))
         
         end
         % for each types of responses, excluding the "green" for readability (both
@@ -434,7 +438,7 @@ if 1
                 
                 displayname = sprintf(displayname, sum(idx_sigcolor), npatsigcolor);
             end
-            % fprintf('\tcolor=%s\n\t%s\n', all_colors_names{icolor}, displayname);
+            fprintf('\tcolor=%s\n%s\n', all_colors_names{icolor}, displayname);
             
             if strcmp(dataset_label, 'Imperial')
                 patid_included = patient_ids_integer(idx_sigcolor);    
@@ -449,11 +453,11 @@ if 1
             end
             %fprintf('color=%s\n%s\n', all_colors_names{icolor},
             %displayname); @Caroline
-            %fprintf('color=%s\n%s\n', all_colors{icolor}, displayname);
+            fprintf('color=%s\n%s\n', all_colors{icolor}, displayname);
             
             % set(findall(0, 'type', 'axes'), 'FontName', 'Times', 'Fontsize', 16, 'TickDir', 'out', 'box', 'off', 'linewidth', 2, 'ticklength', [0.01, 0.01])
                 
-           %print_demographics(tld.BIRTH_weight(unique_patid_sigcolor),tld.BIRTH_Gender(unique_patid_sigcolor),tld.PMA(unique_patid_sigcolor))
+           print_demographics(tld.BIRTH_weight(unique_patid_sigcolor),tld.BIRTH_Gender(unique_patid_sigcolor),tld.PMA(unique_patid_sigcolor))
             
            if ~strcmp(all_colors{icolor},'green')
                 data_sigcolor = squeeze(signals(isig, idx_sigcolor,:));
@@ -512,6 +516,16 @@ if 1
         savefig(fig,sprintf('%s/%s_vs_time_to_event.fig',plot_dir, sprintf(var_labels{isig})) )
 
     end
+
+    %% Summary table 
+summaryTbl = table( var_labels(:), nUniqueSubjects, nUniqueStudies, 'VariableNames', {'Variable', 'N_Unique_Subjects', 'N_Unique_Studies'} );
+
+% Name of the summary workbook (you can change the folder / name as you like)
+summaryFile = fullfile(strcat(plot_dir,'/tables/'), ['summary_' dataset_label '.xlsx']);
+
+% Write the whole summary table to the workbook (one sheet called "Summary")
+writetable(summaryTbl, summaryFile, 'Sheet', 'Summary');
+
     
     %plot piecharts for type of responses
     fig = figure;
@@ -575,7 +589,7 @@ for isig = 1:numel(var_labels)
     percentages = 100 * values / tot_num;
 
     % Plot stacked bar
-    subplot(ceil(numel(varp_labels)/3), 3, isig)
+    subplot(ceil(numel(var_labels)/3), 3, isig)
     b = bar(1, percentages, 'stacked');
 
     % Set consistent colors

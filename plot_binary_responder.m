@@ -78,7 +78,90 @@ for fname_stem = all_stems
     exportgraphics(gcf, strcat(folder,fname_stem,'_boxplots_incrhb.jpg'));
     %print(strcat(folder,fname_stem,'_boxplots_incrhb.jpg'),'-dpdf','-bestfit')
     close all
+
+        %% raincloud plots
+    % Define group names and colors
+    group_names = {'Non', 'Decrease', 'Increase'};
+
+    % Distinct colors for each group in the same order:
+    % 1 = Non (red), 2 = Decrease (blue), 3 = Increase (orange)
+    colors = [
+        1, 0.41, 0.38;        % Non (red)
+        0.65, 0.77, 0.90;     % Decrease (blue)
+        0.99, 150/255, 0      % Increase (orange)
+        ];
+
+    % Define data variables and labels
+    variables = {PMA, PNA, weight, starthb, endhb, diffhb};
+    ylabels = {'PMA (weeks)', 'PNA (days)', 'Weight (kg)', ...
+        'Start Hb (g/l)', 'End Hb (g/l)', 'Increment Hb (g/l)'};
+    filenames = {'_raincloud_pma.jpg', '_raincloud_pna.jpg', ...
+        '_raincloud_weight.jpg', '_raincloud_starthb.jpg', ...
+        '_raincloud_endhb.jpg', '_raincloud_incrhb.jpg'};
+
+    % Loop over each variable
+    for i = 1:length(variables)
+        % Pre-check if there's any data at all
+        skip = true;
+        for g = 1:3
+            data = variables{i}(response == g);
+            data = data(~isnan(data));
+            if ~isempty(data)
+                skip = false;
+                break;
+            end
+        end
+        if skip
+            fprintf('Skipping %s — no valid data.\n', ylabels{i});
+            continue
+        end
+
+        % Compute global x-limits across all groups
+        all_data = variables{i};
+        all_data = all_data(~isnan(all_data));
+        global_xlim = [prctile(all_data, 1) prctile(all_data, 99)];
+
+        % Create figure
+        fig = figure;
+        for g = 1:3
+            data = variables{i}(response == g);
+            data = data(~isnan(data)); % remove NaNs
+
+            if isempty(data)
+                continue
+            end
+
+            % Store current axis limits to adjust after each plot
+            curr_ylim = ylim;
+
+            % Temporarily move axes for vertical stacking
+            subplot(3, 1, g); hold on
+            raincloud_plot(data, ...
+                'color', colors(g,:), ...
+                'box_on', 1, ...
+                'box_col_match', 1, ...
+                'box_dodge', 0, ...
+                'dot_dodge_amount', 0.6, ...
+                'alpha', 0.5,...
+                'band_width', 0.1,...
+                'x_limits', global_xlim);
+
+            set(gca, 'YTick', [], 'fontsize', 13)
+            ylabel(group_names{g}, 'fontsize', 13)
+            box off
+        end
+
+        % Common x-label and title
+        xlabel(ylabels{i}, 'fontsize', 15)
+        sgtitle(fname_stem, 'Interpreter', 'none', 'fontsize', 16)
+
+        % Save the figure
+        exportgraphics(fig, strcat(folder, fname_stem, filenames{i}));
+        close(fig)
+    end
+
 end
+
 %%
 %!pdftk ../results/tables/*pma.jpg cat output ../results/tables/pma_all.jpg
 %!pdftk ../results/tables/*weight.jpg cat output ../results/tables/weight_all.jpg

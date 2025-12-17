@@ -1,4 +1,4 @@
-function run_cluster_analysis(tld,t_overlap,t_limits)
+function run_cluster_analysis(tld,t_overlap,t_limits, plot_dir, dataset_label)
     pre = find(tld.t_average<0);
     post = find(tld.t_average>0);
     sig_quality = tld.sig_quality;
@@ -123,9 +123,11 @@ function run_cluster_analysis(tld,t_overlap,t_limits)
     class (finalTable) %for debugging
     head(finalTable) %for debugging
 
+    % Name of the summary workbook (you can change the folder / name as you like)
+    summaryFile = fullfile(strcat(plot_dir,'/tables/'), ['cluster_analysis_results' dataset_label '.csv']);
 
     % Save CSV
- writetable(finalTable,'cluster_analysis_results.csv');
+    writetable(finalTable,summaryFile);
 
 end
 

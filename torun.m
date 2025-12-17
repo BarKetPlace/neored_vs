@@ -19,19 +19,22 @@ close all
 % Default
 dataset_label = 'Oxford';
 load_other_centers = true;
-cluster_analysis = true;
+cluster_analysis = true; 
+plot_dir_stem = 'results_Oxford';
 
 [ret, name] = system('hostname');
 name = strip(name);
 if strcmp(name, 'cmm0958')
     addpath('lib/palm/palm-alpha119/')
     dataset_label = 'Stockholm';
+    plot_dir_stem = 'results_Stockholm';
 end
 
 if contains(name, 'Mac')
     addpath('lib/palm/palm-alpha119/')
     dataset_label = 'Imperial';
     load_other_centers = false;
+    plot_dir_stem = 'results_Imperial';
 end
 
 %% plot average and find responders and non-responders
@@ -65,13 +68,13 @@ end
 sig_quality_fname = sprintf('%s/sig_quality_%s.mat', preprocessed_data_folder, dataset_label);
 transfusion_rawdata_fname = strcat(preprocessed_data_folder,'/rawtransfusiondata.mat');
 
-plot_dir_stem = 'results_Stockholm';
+
 if load_other_centers
     plot_dir_stem=strcat(plot_dir_stem,'_Oxford_Imperial');
 end
 
 %%  Run analysis with several cutoffs on the age at event start.
-for ianalysis = 3:3
+for ianalysis = 1:3
     % Remove cache 
     delete(sig_quality_fname)
     delete(transfusion_rawdata_fname)
@@ -118,6 +121,16 @@ for ianalysis = 3:3
         t_limits, t_window, t_overlap, t_baseline, check_sig, dataset_label, std_threshold, plot_dir, ...
         sig_quality_fname, transfusion_rawdata_fname,evt_start_days_lower,evt_start_days_upper,load_other_centers,cluster_analysis);
     
+ %% output of used transfusion events 
+    % Extract and ensure it's a column
+    studyid = tld.studyid(:);  % forces column orientation    
+    % Convert to table
+    T = table(studyid, 'VariableNames', {'studyid'});
+    % Save to CSV
+    study_id_filepath = fullfile(plot_dir, 'studyids.csv');
+    writetable(T, study_id_filepath);
+    fprintf('Saved tld.studyid to "%s"\n', study_id_filepath);
+
     %% Create table of results and save as excel files
     increase_responder=zeros(size(responders));
     decrease_responder=zeros(size(responders));
@@ -126,6 +139,8 @@ for ianalysis = 3:3
     decrease_responder(find(responders==3))=1;
     decrease_responder(find(responders==1))=1;
     
+  
+
     % Create one table for each variable of interest
     for v=1:length(var_labels)
         T=table(tld.subjectid, tld.studyid, tld.pre_post_hb(1,:)',tld.pre_post_hb(2,:)',tld.TESTOD_CurrentVentilation',tld.TESTOD_MostRecentWeight', tld.PMA',tld.evt_start_pna_days', tld.BIRTH_Gender',increase_responder(v,:)',decrease_responder(v,:)',signal_increase(v,:)',signal_decrease(v,:)', ...
@@ -133,8 +148,15 @@ for ianalysis = 3:3
         excel_fname = strcat(plot_dir,'/tables/', var_labels(v), sprintf('_%s.xlsx',dataset_label));
         mkdir(strcat(plot_dir,'/tables/'))
         writetable(T, cell2mat(excel_fname));
+
+         
+
     end
     
+
+
+
+
     close all
     
     plot_binary_responder
